@@ -1,0 +1,1701 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:16ec09f0-38f9-4217-8119-a9490689f580",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-09-19T07:01:16.794218+00:00",
+    "tools": [
+      {
+        "vendor": "ECDAT",
+        "name": "Enterprise Cryptographic Discovery & Analysis Tool",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "ECDAT Inventory Assessment",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-1-127.0.0.1:8443",
+      "name": "TLS Endpoint 127.0.0.1:8443",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-2-127.0.0.1:8444",
+      "name": "TLS Endpoint 127.0.0.1:8444",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-3-127.0.0.1:8445",
+      "name": "TLS Endpoint 127.0.0.1:8445",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-4-python.org:443",
+      "name": "TLS Endpoint python.org:443",
+      "description": "Subject: CN=www.python.org | Issuer: CN=GlobalSign Atlas R3 DV TLS CA 2025 Q4,O=GlobalSign nv-sa,C=BE",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "63.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-5-google.com:443",
+      "name": "TLS Endpoint google.com:443",
+      "description": "Subject: CN=*.google.com | Issuer: CN=WR2,O=Google Trust Services,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-sha256"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "84.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-6-wikipedia.org:443",
+      "name": "TLS Endpoint wikipedia.org:443",
+      "description": "Subject: CN=*.wikipedia.org | Issuer: CN=YE2,O=Let's Encrypt,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA384"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "84.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-7-github.com:443",
+      "name": "TLS Endpoint github.com:443",
+      "description": "Subject: CN=github.com | Issuer: CN=Sectigo Public Server Authentication CA DV E36,O=Sectigo Limited,C=GB",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA256"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-69-incometax.gov.in:443",
+      "name": "TLS Endpoint incometax.gov.in:443",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-70-uidai.gov.in:443",
+      "name": "TLS Endpoint uidai.gov.in:443",
+      "description": "Subject: CN=uidai.gov.in | Issuer: CN=EM DV TLS CA - G2A-1,O=eMudhra Technologies Limited,C=IN",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha384WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-71-india.gov.in:443",
+      "name": "TLS Endpoint india.gov.in:443",
+      "description": "Subject: CN=*.india.gov.in | Issuer: CN=YE1,O=Let's Encrypt,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA384"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "54.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-72-digilocker.gov.in:443",
+      "name": "TLS Endpoint digilocker.gov.in:443",
+      "description": "Subject: CN=*.digilocker.gov.in | Issuer: CN=RapidSSL TLS RSA CA G1,OU=www.digicert.com,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-73-gst.gov.in:443",
+      "name": "TLS Endpoint gst.gov.in:443",
+      "description": "Subject: CN=*.gst.gov.in,O=GOODS AND SERVICES TAX NETWORK,L=New Delhi,ST=Delhi,C=IN | Issuer: CN=GlobalSign RSA OV SSL CA 2018,O=GlobalSign nv-sa,C=BE",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.2"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "ECDHE-RSA-AES128-GCM-SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "56.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-74-irctc.co.in:443",
+      "name": "TLS Endpoint irctc.co.in:443",
+      "description": "Subject: CN=www.irctc.co.in,O=Indian Railway Catering and Tourism Corporation Ltd.,L=New Delhi,ST=Delhi,C=IN,1.3.6.1.4.1.311.60.2.1.3=IN,2.5.4.5=Government Entities,2.5.4.15=Government Entity | Issuer: CN=GlobalSign GCC R3 EV TLS CA 2025,O=GlobalSign nv-sa,C=BE",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-75-rbi.org.in:443",
+      "name": "TLS Endpoint rbi.org.in:443",
+      "description": "Subject: CN=rbi.org.in | Issuer: CN=GeoTrust TLS RSA CA G1,OU=www.digicert.com,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-76-npci.org.in:443",
+      "name": "TLS Endpoint npci.org.in:443",
+      "description": "Subject: CN=npci.org.in,O=National Payments Corporation Of India,L=Mumbai,ST=Maharashtra,C=IN | Issuer: CN=DigiCert Global G3 TLS ECC SHA384 2020 CA1,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA384"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-77-sbi.co.in:443",
+      "name": "TLS Endpoint sbi.co.in:443",
+      "description": "Subject: CN=*.sbi.co.in | Issuer: CN=Entrust DV TLS Issuing RSA CA 2,O=Entrust Limited,C=CA",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-78-nseindia.com:443",
+      "name": "TLS Endpoint nseindia.com:443",
+      "description": "Subject: CN=www.nseindia.com,O=National Stock Exchange of India Ltd,L=Mumbai,ST=Maharashtra,C=IN | Issuer: CN=DigiCert Global G3 TLS ECC SHA384 2020 CA1,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA384"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "54.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-79-bseindia.com:443",
+      "name": "TLS Endpoint bseindia.com:443",
+      "description": "Subject: CN=*.bseindia.com,O=BSE Limited,L=Mumbai,ST=Maharashtra,C=IN | Issuer: CN=DigiCert Global G3 TLS ECC SHA384 2020 CA1,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA384"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-80-epfindia.gov.in:443",
+      "name": "TLS Endpoint epfindia.gov.in:443",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-81-hdfcbank.com:443",
+      "name": "TLS Endpoint hdfcbank.com:443",
+      "description": "Subject: CN=www.hdfc.bank.in,O=Hdfc Bank Limited,L=Mumbai,ST=Maharashtra,C=IN | Issuer: CN=GeoTrust TLS RSA CA G1,OU=www.digicert.com,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-82-icicibank.com:443",
+      "name": "TLS Endpoint icicibank.com:443",
+      "description": "Subject: CN=icicibank.com,O=ICICI Bank Limited,ST=Telangana,C=IN | Issuer: CN=Sectigo Public Server Authentication CA OV R36,O=Sectigo Limited,C=GB",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-83-axisbank.com:443",
+      "name": "TLS Endpoint axisbank.com:443",
+      "description": "Subject: CN=www.axisbank.com,O=Axis Bank Ltd,L=Ahmedabad,ST=Gujarat,C=IN | Issuer: CN=GeoTrust TLS RSA CA G1,OU=www.digicert.com,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-84-kotak.com:443",
+      "name": "TLS Endpoint kotak.com:443",
+      "description": "Subject: CN=www.kotak.bank.in,O=Kotak Mahindra Bank Ltd,ST=Mah\u0101r\u0101shtra,C=IN | Issuer: CN=Sectigo Public Server Authentication CA OV R36,O=Sectigo Limited,C=GB",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.2"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "ECDHE-RSA-AES128-GCM-SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "60.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-85-cloudflare.com:443",
+      "name": "TLS Endpoint cloudflare.com:443",
+      "description": "Subject: CN=cloudflare.com | Issuer: CN=WE1,O=Google Trust Services,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA256"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-86-mozilla.org:443",
+      "name": "TLS Endpoint mozilla.org:443",
+      "description": "Subject: CN=mozilla.org | Issuer: CN=WR3,O=Google Trust Services,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-87-microsoft.com:443",
+      "name": "TLS Endpoint microsoft.com:443",
+      "description": "Subject: CN=microsoft.com,O=Microsoft Corporation,L=Redmond,ST=WA,C=US | Issuer: CN=Microsoft TLS G2 RSA CA OCSP 04,O=Microsoft Corporation,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha384WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-88-apache.org:443",
+      "name": "TLS Endpoint apache.org:443",
+      "description": "Subject: CN=apache.org | Issuer: CN=YR2,O=Let's Encrypt,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-89-stackoverflow.com:443",
+      "name": "TLS Endpoint stackoverflow.com:443",
+      "description": "Subject: CN=stackoverflow.com | Issuer: CN=YE1,O=Let's Encrypt,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA384"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-90-iitb.ac.in:443",
+      "name": "TLS Endpoint iitb.ac.in:443",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-91-iitd.ac.in:443",
+      "name": "TLS Endpoint iitd.ac.in:443",
+      "description": "Subject: CN=*.iitd.ac.in,O=INDIAN INSTITUTE OF TECHNOLOGY DELHI,L=New Delhi,ST=Delhi,C=IN | Issuer: CN=GlobalSign GCC R46 OV TLS CA 2025,O=GlobalSign nv-sa,C=BE",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-92-iitm.ac.in:443",
+      "name": "TLS Endpoint iitm.ac.in:443",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-93-du.ac.in:443",
+      "name": "TLS Endpoint du.ac.in:443",
+      "description": "Subject: CN=*.du.ac.in | Issuer: CN=RapidSSL TLS RSA CA G1,OU=www.digicert.com,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-94-jio.com:443",
+      "name": "TLS Endpoint jio.com:443",
+      "description": "Subject: CN=www.jio.com,O=Reliance Industries Limited,L=Mumbai,ST=Maharashtra,C=IN | Issuer: CN=GlobalSign RSA OV SSL CA 2018,O=GlobalSign nv-sa,C=BE",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.2"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "AES256-SHA"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "52.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-95-airtel.in:443",
+      "name": "TLS Endpoint airtel.in:443",
+      "description": "Subject: CN=airtel.in,O=BHARTI AIRTEL LIMITED,L=Gurugram,ST=Haryana,C=IN | Issuer: CN=DigiCert Global G2 TLS RSA SHA256 2020 CA1,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.2"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "ECDHE-RSA-AES128-GCM-SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "56.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-96-bsnl.co.in:443",
+      "name": "TLS Endpoint bsnl.co.in:443",
+      "description": "Subject: CN=*.bsnl.co.in,O=Bharat Sanchar Nigam Limited,L=NEW DELHI,ST=Delhi,C=IN | Issuer: CN=GeoTrust TLS RSA CA G1,OU=www.digicert.com,O=DigiCert Inc,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-97-flipkart.com:443",
+      "name": "TLS Endpoint flipkart.com:443",
+      "description": "Subject: CN=www.flipkart.com,O=FLIPKART INTERNET PRIVATE LIMITED,L=Bengaluru,ST=Karnataka,C=IN | Issuer: CN=GlobalSign RSA OV SSL CA 2018,O=GlobalSign nv-sa,C=BE",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-98-amazon.in:443",
+      "name": "TLS Endpoint amazon.in:443",
+      "description": "Subject: CN=*.cy.peg.a2z.com | Issuer: CN=Amazon RSA 2048 M04,O=Amazon,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "46.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-99-swiggy.com:443",
+      "name": "TLS Endpoint swiggy.com:443",
+      "description": "Subject: CN=swiggy.in | Issuer: CN=Amazon RSA 2048 M04,O=Amazon,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.2"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "ECDHE-RSA-AES128-GCM-SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "52.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-100-zomato.com:443",
+      "name": "TLS Endpoint zomato.com:443",
+      "description": "Subject: CN=zomato.com | Issuer: CN=Amazon RSA 2048 M04,O=Amazon,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.2"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "ECDHE-RSA-AES128-GCM-SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "52.5"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    }
+  ]
+}
