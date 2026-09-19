@@ -257,7 +257,7 @@ with tab2:
         <h4 style="margin-top:0; color: #00C9FF;">⚡ Executive 5-Line Slide Summary</h4>
         <ol style="margin-bottom:0; color: #D8DEE9; line-height: 1.6;">
             <li><b>Discovery & Inventory</b>: Pure-Python TLS endpoint scanner + CycloneDX v1.6 CBOM exporter (<b>Implemented</b> for TLS endpoints; <b>Partial</b> for source code; HSMs/Cloud KMS <b>Planned</b>).</li>
-            <li><b>Quantum Risk Scoring</b>: Implements Mosca-Weighted Quantum Risk Score (MWQRS, 0–100 scale) combining algorithm vulnerability (35%), key length (20%), TLS version (15%), cert expiry (10%), and service criticality (20%) (<b>Implemented</b>).</li>
+            <li><b>Quantum Risk Scoring</b>: Implements Mosca-Weighted Quantum Risk Score (MWQRS, 0–100 scale) combining algorithm vulnerability (35%), key length (20%), TLS version (15%), cert expiry (10%), and service criticality (20%) (<b>Partial</b> — Mosca-inspired composite index, not direct evaluation of X+Y>Z).</li>
             <li><b>PQC Migration Roadmap</b>: Maps classical algorithms (RSA/ECC/DSA) to NIST FIPS 203 (ML-KEM-768) & FIPS 204 (ML-DSA-65) with hybrid transition modes and NetworkX dependency blast-radius sequence (<b>Implemented</b>).</li>
             <li><b>Interactive Dashboard & CLI</b>: Streamlit executive web application with Plotly analytics, network dependency graphs, CBOM exporter, and unified master CLI (<code>python cli.py pipeline</code>) (<b>Implemented</b>).</li>
             <li><b>Gaps & Roadmap</b>: Binary (.so/ELF) scanning, container image inspection, HSM/KMS discovery, and PQC latency/cost estimation are identified as <b>Planned</b> enhancements.</li>
@@ -269,35 +269,35 @@ with tab2:
 
     req_data = [
         {
-            "Requirement": "1. Catalogue Cryptographic Artefacts (Algorithms, keys, certificates, protocols, libraries, HSMs, Cloud KMS)",
+            "Requirement": "(i) Catalogue Cryptographic Artefacts (Algorithms, keys, certificates, protocols, libraries, HSMs, Cloud KMS)",
             "Status": "Partial",
             "Implemented By": "ecdat_scanner.py (scan_host), ecdat_inventory.py (ingest_scan_results), ecdat_codescanner.py (scan_file_content)",
             "30-Second Demo": "Run python cli.py scan --host google.com:443 -> view extracted TLS, cipher, key size, sig algo, and code findings.",
             "Identified Gap / Limitation": "HSMs and Cloud KMS not catalogued. Libraries scanned via source AST/regex; native compiled binaries (.so/.dll) not inspected."
         },
         {
-            "Requirement": "2. Quantum Risk Assessment (Mosca's Inequality framework & weighted risk scoring)",
-            "Status": "Implemented",
-            "Implemented By": "ecdat_scoring.py (calculate_mwqrs, score_all_assets)",
-            "30-Second Demo": "Run python cli.py score -> view MWQRS scores (0-100 scale) calculated per asset based on 5 weighted parameters.",
-            "Identified Gap / Limitation": "Data security shelf-life (Y) parameter in Mosca's inequality is fixed/static per asset type rather than dynamically modeled from business retention policies."
-        },
-        {
-            "Requirement": "3. Classify by Type, Lifetime & Criticality (Categorization & business impact assessment)",
+            "Requirement": "(ii) Classify by Type, Lifetime & Criticality (Categorization & business impact assessment)",
             "Status": "Partial",
             "Implemented By": "ecdat_inventory.py (init_db, seed_demo_data), ecdat_scoring.py (CRITICALITY_MULTIPLIERS)",
             "30-Second Demo": "Launch streamlit run app.py -> filter assets by criticality tier (P0-P3) and certificate days to expiry (days_to_expiry).",
-            "Identified Gap / Limitation": "Cert expiry lifetime is tracked, but system operational lifetime (Z) is static. Service dependency graph is mock/seeded (seed_demo_data), not automatically discovered from network traffic. (Note: Baseline '10 assets' in report comprises 4 public + 3 local test + 3 seeded service assets vs 4 hosts in hosts.txt)."
+            "Identified Gap / Limitation": "Cert expiry lifetime is tracked, but system operational lifetime (Z) is static. Service dependency graph is mock/seeded (seed_demo_data), not automatically discovered from network traffic. (Note: The baseline '10 assets' breakdown is not verified — no documentary evidence exists for this breakdown)."
         },
         {
-            "Requirement": "4. Recommend PQC/Hybrid Alternatives (NIST standards, latency, cost & migration sequence)",
+            "Requirement": "(iii) Quantum Risk Assessment (Mosca-inspired framework & weighted risk scoring)",
+            "Status": "Partial",
+            "Implemented By": "ecdat_scoring.py (calculate_mwqrs, score_all_assets)",
+            "30-Second Demo": "Run python cli.py score -> view MWQRS scores (0-100 scale) calculated per asset based on 5 weighted parameters.",
+            "Identified Gap / Limitation": "The scoring model (MWQRS) is Mosca-inspired rather than a direct mathematical evaluation of Mosca's inequality (X + Y > Z). Data security shelf-life (Y) and migration time (X) are statically weighted rather than dynamically modeled from business retention policies."
+        },
+        {
+            "Requirement": "(iv) Recommend PQC/Hybrid Alternatives (NIST standards, latency, cost & migration sequence)",
             "Status": "Partial",
             "Implemented By": "ecdat_simulator.py (PQC_MIGRATION_MAP, simulate_migration, recommend_migration_order)",
             "30-Second Demo": "Run python cli.py simulate -> view recommended NIST FIPS 203/204/205 replacements (ML-KEM-768, ML-DSA-65), hybrid mode, and sequence.",
             "Identified Gap / Limitation": "Latency overhead impact and migration cost estimates are absent/not computed."
         },
         {
-            "Requirement": "5. Deliverable: CBOM Analytics Tool (Source code, binaries, libraries, container images, report, GUI)",
+            "Requirement": "(v) Deliverable: CBOM Analytics Tool (Source code, binaries, libraries, container images, report, GUI)",
             "Status": "Partial",
             "Implemented By": "ecdat_inventory.py (export_cbom), ecdat_codescanner.py (scan_source_directory), app.py, cli.py (cbom)",
             "30-Second Demo": "Run python cli.py cbom --out cbom.json for CycloneDX v1.6 CBOM; launch streamlit run app.py for executive GUI.",
@@ -306,7 +306,7 @@ with tab2:
     ]
 
     st.dataframe(pd.DataFrame(req_data), use_container_width=True)
-    st.caption("Status Legend: **Implemented** (Fully operational in code) | **Partial** (Operational for core scope; secondary features absent) | **Planned** (Architecturally identified, not yet coded)")
+    st.caption("Status Legend: **Implemented** (Fully operational in code) | **Partial** (Operational for core scope; secondary features absent or using inspired composite model) | **Planned** (Architecturally identified, not yet coded)")
 
 
 # ---------------------------------------------------------
