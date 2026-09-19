@@ -27,7 +27,12 @@ from cryptography.hazmat.primitives.asymmetric import rsa, ec, dsa
 from cryptography.hazmat.backends import default_backend
 
 
-DEFAULT_TIMEOUT = 6.0
+DEFAULT_TIMEOUT = 10.0
+
+
+def is_local_host(host: str) -> bool:
+    """Check if target host is loopback/local."""
+    return host in {"127.0.0.1", "localhost", "::1"} or host.startswith("127.")
 
 
 def parse_target(raw: str):
@@ -165,15 +170,19 @@ def scan_host(host: str, port: int = 443, timeout: float = DEFAULT_TIMEOUT) -> d
     return result
 
 
-def scan_targets(targets, max_workers=10, timeout=DEFAULT_TIMEOUT):
+def scan_targets(targets, max_workers=10, timeout=DEFAULT_TIMEOUT, delay=2.5):
+    """
+    Scans a list of target tuples (host, port).
+    Applies a configurable polite delay (default 2.5s) sequentially between
+    consecutive non-local public hosts to respect server load rules.
+    """
+    import time
     results = []
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futures = {
-            pool.submit(scan_host, host, port, timeout): (host, port)
-            for host, port in targets
-        }
-        for fut in as_completed(futures):
-            results.append(fut.result())
+    for i, (host, port) in enumerate(targets):
+        if i > 0 and delay > 0 and not is_local_host(host):
+            time.sleep(delay)
+        res = scan_host(host, port, timeout=timeout)
+        results.append(res)
     return results
 
 

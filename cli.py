@@ -38,6 +38,7 @@ def main():
     pipe_p.add_argument("--code-dir", default=".", help="Directory to scan for code crypto issues")
     pipe_p.add_argument("--out-scan", default="scan_results.json", help="Output scan JSON path")
     pipe_p.add_argument("--out-cbom", default="ecdat_cbom.json", help="Output CycloneDX CBOM path")
+    pipe_p.add_argument("--skip-scan", action="store_true", help="Skip live scanning and reuse cached scan results")
 
     # Command: scan
     scan_p = subparsers.add_parser("scan", help="Stage 1 & 2: TLS & Cert Discovery Scan")
@@ -77,22 +78,26 @@ def main():
         print("==========================================================================")
 
         # Step 1: Scan TLS Endpoints
-        targets = []
-        if Path(hosts_file).exists():
-            with open(hosts_file) as f:
-                for line in f:
-                    t = scanner_core.parse_target(line)
-                    if t:
-                        targets.append(t)
-
-        if targets:
-            print(f"\n[Stage 1 & 2] Scanning {len(targets)} host target(s)...")
-            results = scanner_core.scan_targets(targets)
-            with open(scan_out, "w") as f:
-                json.dump(results, f, indent=2, default=str)
-            scanner_core.print_summary(results)
+        skip_scan = getattr(args, "skip_scan", False)
+        if skip_scan and Path(scan_out).exists():
+            print(f"\n[Stage 1 & 2] Skipping live network scan (--skip-scan); reusing cached '{scan_out}'...")
         else:
-            print(f"\n[Stage 1 & 2] No targets found in {hosts_file}. Skipping scan execution.")
+            targets = []
+            if Path(hosts_file).exists():
+                with open(hosts_file) as f:
+                    for line in f:
+                        t = scanner_core.parse_target(line)
+                        if t:
+                            targets.append(t)
+
+            if targets:
+                print(f"\n[Stage 1 & 2] Scanning {len(targets)} host target(s)...")
+                results = scanner_core.scan_targets(targets)
+                with open(scan_out, "w") as f:
+                    json.dump(results, f, indent=2, default=str)
+                scanner_core.print_summary(results)
+            else:
+                print(f"\n[Stage 1 & 2] No targets found in {hosts_file}. Skipping scan execution.")
 
         # Step 2: Stage 3 Ingestion & Seeding
         print("\n[Stage 3] Ingesting results into SQLite database (ecdat.db)...")

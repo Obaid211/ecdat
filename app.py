@@ -135,6 +135,62 @@ with tab1:
 
         st.markdown("---")
 
+        # ---------------------------------------------------------
+        # AGGREGATE PUBLIC HOST SAMPLE STATISTICS PANEL
+        # ---------------------------------------------------------
+        st.markdown("### 🌐 Aggregate Public Host Scan Statistics")
+        
+        # Filter real scanned hosts (excluding local loopback / demo seeds)
+        real_df = df[~df["host"].str.startswith("127.")].copy() if not df.empty else pd.DataFrame()
+        n_attempted = len(real_df)
+        n_scanned = len(real_df[real_df["status"] == "success"]) if not real_df.empty else 0
+        n_unreachable = len(real_df[real_df["status"] == "unreachable"]) if not real_df.empty else 0
+        
+        # Quantum Vulnerable Breakdown (RSA vs ECC)
+        if not real_df.empty and n_scanned > 0:
+            rsa_count = len(real_df[real_df["cert_key_type"].astype(str).str.contains("RSA", na=False)])
+            ecc_count = len(real_df[real_df["cert_key_type"].astype(str).str.contains("ECC", na=False)])
+            qv_pct = round((rsa_count + ecc_count) / n_scanned * 100, 1)
+        else:
+            qv_pct = 0.0
+        
+        latest_scan = real_df["scanned_at"].max() if not real_df.empty and "scanned_at" in real_df and not real_df["scanned_at"].isnull().all() else "N/A"
+        
+        p1, p2, p3, p4, p5 = st.columns(5)
+        p1.metric("Attempted Hosts", n_attempted)
+        p2.metric("Successfully Scanned", n_scanned)
+        p3.metric("Unreachable Hosts", n_unreachable)
+        p4.metric("Quantum Vulnerable %", f"{qv_pct}%", help="RSA or ECC public keys (vulnerable to Shor's algorithm)")
+        p5.metric("Sample Size (n)", n_scanned)
+
+        col_st1, col_st2, col_st3 = st.columns(3)
+        with col_st1:
+            st.markdown("**TLS Version Distribution**")
+            if not real_df.empty and "tls_version" in real_df:
+                tls_counts = real_df["tls_version"].value_counts().reset_index()
+                tls_counts.columns = ["TLS Version", "Count"]
+                st.dataframe(tls_counts, use_container_width=True)
+        with col_st2:
+            st.markdown("**Key Algorithm Distribution**")
+            if not real_df.empty and "cert_key_type" in real_df:
+                algo_counts = real_df["cert_key_type"].value_counts().reset_index()
+                algo_counts.columns = ["Algorithm", "Count"]
+                st.dataframe(algo_counts, use_container_width=True)
+        with col_st3:
+            st.markdown("**MWQRS Risk Band Distribution**")
+            if not real_df.empty and "risk_score" in real_df:
+                real_df["Risk Band"] = pd.cut(
+                    real_df["risk_score"],
+                    bins=[-1, 49.9, 79.9, 100],
+                    labels=["Safe (<50)", "Medium (50-79)", "Critical (≥80)"]
+                )
+                band_counts = real_df["Risk Band"].value_counts().reset_index()
+                band_counts.columns = ["Risk Band", "Count"]
+                st.dataframe(band_counts, use_container_width=True)
+
+        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned}, scanned at {latest_scan}); not a market-wide claim. Excludes mock seeded service records.")
+        st.markdown("---")
+
         col_left, col_right = st.columns(2)
 
         with col_left:
