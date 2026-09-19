@@ -77,23 +77,29 @@ def get_verified_signature_algorithm(cert, key_type):
 def classify_risk(tls_version, key_type, key_size, sig_algo, days_to_expiry):
     """
     Lightweight rule-based flags used later by Stage 4 (scoring).
-    Stage 1 just tags raw facts; scoring logic itself lives in Stage 4.
+    Rules for TLS versions, key sizes, and signature algorithms strictly align
+    with NIST SP 800-52 Rev. 2 (Guidelines for TLS Implementations).
     """
     flags = []
 
+    # NIST SP 800-52 Rev. 2 Section 3.1 & 3.2: TLS 1.2/1.3 required; TLS 1.0/1.1 and SSL deprecated.
     weak_tls = {"TLSv1", "TLSv1.1", "SSLv3", "SSLv2"}
     if tls_version in weak_tls:
         flags.append(f"OUTDATED_TLS_VERSION:{tls_version}")
 
+    # NIST SP 800-52 Rev. 2 Section 3.3.1: RSA key length must be >= 2048 bits.
     if key_type == "RSA" and key_size and key_size < 2048:
         flags.append(f"WEAK_RSA_KEY_SIZE:{key_size}bit")
 
+    # NIST SP 800-52 Rev. 2 Section 3.3.1: ECC key length must be >= 256 bits.
     if key_type.startswith("ECC") and key_size and key_size < 256:
         flags.append(f"WEAK_ECC_KEY_SIZE:{key_size}bit")
 
+    # NIST SP 800-52 Rev. 2 Section 3.3.2: SHA-1 and MD5 signature algorithms prohibited.
     if sig_algo and ("sha1" in sig_algo.lower() or "md5" in sig_algo.lower()):
         flags.append(f"WEAK_SIGNATURE_ALGO:{sig_algo}")
 
+    # Certificate lifecycle expiry checks (Operational PKI policy / RFC 5280)
     if days_to_expiry is not None:
         if days_to_expiry < 0:
             flags.append("CERT_EXPIRED")

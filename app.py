@@ -188,7 +188,7 @@ with tab1:
                 band_counts.columns = ["Risk Band", "Count"]
                 st.dataframe(band_counts, use_container_width=True)
 
-        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned}, scanned at {latest_scan}); not a market-wide claim. Excludes mock seeded service records.")
+        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned}, scanned at {latest_scan}); not a market-wide claim. Risk classification informed by NIST SP 800-52 Rev. 2 guidelines. Excludes mock seeded service records.")
         st.markdown("---")
 
         col_left, col_right = st.columns(2)
