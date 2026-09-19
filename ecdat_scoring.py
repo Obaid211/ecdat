@@ -1,11 +1,18 @@
 """
 ECDAT - Stage 4: Quantum Risk Scoring Engine
 ---------------------------------------------
-Implements Mosca-Weighted Quantum Risk Score (MWQRS) based on Mosca's Inequality
+Implements Mosca-Weighted Quantum Risk Score (MWQRS) inspired by Mosca's Inequality
 (X + Y > Z: migration time + security lifespan > time to quantum computer).
+
+The MWQRS is a *weighted composite score* (0–100 scale) across five risk dimensions
+(algorithm vulnerability, key size, TLS version, cert expiry, service criticality),
+not a direct numerical evaluation of X + Y > Z.  It captures the *spirit* of Mosca's
+framework — that urgency is driven by algorithmic exposure, migration cost, and data
+retention — but uses a scoring model rather than the raw three-variable inequality.
 
 Scores assets on a 0 (safe) to 100 (critical) scale and updates ecdat.db.
 """
+
 
 import json
 import sqlite3

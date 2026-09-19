@@ -9,7 +9,7 @@ ECDAT (Enterprise Cryptographic Discovery & Analysis Tool) is an automated crypt
 ## Key Features & Capabilities
 
 - **Pure-Python TLS Discovery**: Performs polite TLS handshakes to extract TLS versions, cipher suites, certificate key specifications (RSA/ECC/DSA), signature algorithms, and expiry dates without native external binaries.
-- **Mosca-Weighted Quantum Risk Score (MWQRS)**: Calculates a 0–100 quantum vulnerability score based on algorithm vulnerability (35%), key size (20%), protocol version (15%), cert expiry (10%), and service criticality (20% with P0/P1 multipliers).
+- **Mosca-Inspired Quantum Risk Score (MWQRS)**: Calculates a 0–100 quantum vulnerability score using a weighted composite inspired by Mosca's Inequality (X+Y>Z), combining algorithm vulnerability (35%), key size (20%), protocol version (15%), cert expiry (10%), and service criticality (20% with P0/P1 multipliers). The score captures the spirit of the framework — exposure urgency, migration cost, data lifetime — as a composite score, not a direct evaluation of the three-variable inequality.
 - **CycloneDX CBOM Export**: Generates standardized Cryptographic Bill of Materials documents in CycloneDX Specification 1.6 JSON format.
 - **PQC Migration Simulator & Blast Radius**: Maps vulnerable classical algorithms to NIST FIPS 203 (ML-KEM-768), FIPS 204 (ML-DSA-65), and FIPS 205 (SLH-DSA) standards, analyzes dependency graph blast radius via NetworkX, and computes topological migration sequences.
 - **Multi-Language Source Code Scanner**: Scans repository source code (AST + regex rules across Python, Java, JS, C/C++) for MD5/SHA1 weak hashing, DES ciphers, weak RSA generation, and exposed private keys.

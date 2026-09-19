@@ -31,6 +31,10 @@ htmlcov/
 ecdat.db
 ecdat_cbom.json
 temp_scan.json
+scan_results.json
+
+# Scratch / utility scripts
+check_scan.py
 
 # Operating System Files
 .DS_Store
