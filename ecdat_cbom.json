@@ -1,0 +1,325 @@
+{
+  "$schema": "http://cyclonedx.org/schema/bom-1.6.schema.json",
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.6",
+  "serialNumber": "urn:uuid:e2caa7f2-e391-4375-ac78-a61c6772b2b7",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-09-06T21:05:16.736250+00:00",
+    "tools": [
+      {
+        "vendor": "ECDAT",
+        "name": "Enterprise Cryptographic Discovery & Analysis Tool",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "type": "application",
+      "name": "ECDAT Inventory Assessment",
+      "version": "1.0.0"
+    }
+  },
+  "components": [
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-1-127.0.0.1:8443",
+      "name": "TLS Endpoint 127.0.0.1:8443",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-2-127.0.0.1:8444",
+      "name": "TLS Endpoint 127.0.0.1:8444",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-3-127.0.0.1:8445",
+      "name": "TLS Endpoint 127.0.0.1:8445",
+      "description": "Subject: N/A | Issuer: N/A",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "Unknown"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "Unknown"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "0"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "Unknown"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "0.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-4-python.org:443",
+      "name": "TLS Endpoint python.org:443",
+      "description": "Subject: CN=www.python.org | Issuer: CN=GlobalSign Atlas R3 DV TLS CA 2025 Q4,O=GlobalSign nv-sa,C=BE",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "RSA"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "2048"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "sha256WithRSAEncryption"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "63.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-5-google.com:443",
+      "name": "TLS Endpoint google.com:443",
+      "description": "Subject: CN=*.google.com | Issuer: CN=WR2,O=Google Trust Services,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_256_GCM_SHA384"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-sha256"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "84.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-6-wikipedia.org:443",
+      "name": "TLS Endpoint wikipedia.org:443",
+      "description": "Subject: CN=*.wikipedia.org | Issuer: CN=YE2,O=Let's Encrypt,C=US",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA384"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "84.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    },
+    {
+      "type": "cryptographic-asset",
+      "bom-ref": "crypto-asset-7-github.com:443",
+      "name": "TLS Endpoint github.com:443",
+      "description": "Subject: CN=github.com | Issuer: CN=Sectigo Public Server Authentication CA DV E36,O=Sectigo Limited,C=GB",
+      "properties": [
+        {
+          "name": "tls:version",
+          "value": "TLSv1.3"
+        },
+        {
+          "name": "tls:cipher_suite",
+          "value": "TLS_AES_128_GCM_SHA256"
+        },
+        {
+          "name": "tls:cipher_bits",
+          "value": "128"
+        },
+        {
+          "name": "certificate:key_type",
+          "value": "ECC (secp256r1)"
+        },
+        {
+          "name": "certificate:key_size_bits",
+          "value": "256"
+        },
+        {
+          "name": "certificate:signature_algorithm",
+          "value": "ecdsa-with-SHA256"
+        },
+        {
+          "name": "risk:mwqrs_score",
+          "value": "50.0"
+        }
+      ],
+      "evidence": {
+        "identity": {
+          "field": "host",
+          "conformance": "scanned",
+          "confidence": 1.0
+        }
+      }
+    }
+  ]
+}

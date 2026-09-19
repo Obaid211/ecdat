@@ -1,0 +1,9 @@
+# One host per line. Optionally specify a port with host:port
+# Lines starting with # are ignored
+google.com
+github.com
+python.org
+wikipedia.org
+127.0.0.1:8443
+127.0.0.1:8444
+127.0.0.1:8445
