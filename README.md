@@ -2,17 +2,24 @@
 
 > **SIH Problem Statement SIH26164** | Post-Quantum Cryptography (PQC) & Keyfactor AgileSec Pipeline Model (NTRO)
 
-ECDAT (Enterprise Cryptographic Discovery & Analysis Tool) is an automated cryptographic inventory, quantum risk assessment, and Post-Quantum Cryptography (PQC) migration simulation pipeline built for enterprise systems and digital public infrastructure.
+ECDAT (Enterprise Cryptographic Discovery & Analysis Tool) is an automated cryptographic inventory, quantum risk assessment, and Post-Quantum Cryptography (PQC) migration simulation pipeline built for enterprise security teams.
+
+## Project Snapshot
+
+- Description: Project that I want to pursue.
+- Primary language: Python (99.5%)
+- Secondary language: Java (0.5%)
+- Repository focus: cryptographic asset discovery, risk analysis, and PQC readiness planning.
 
 ---
 
 ## Key Features & Capabilities
 
-- **Pure-Python TLS Discovery**: Performs polite TLS handshakes to extract TLS versions, cipher suites, certificate key specifications (RSA/ECC/DSA), signature algorithms, and expiry dates without native external binaries.
-- **Mosca-Inspired Quantum Risk Score (MWQRS)**: Calculates a 0–100 quantum vulnerability score using a weighted composite inspired by Mosca's Inequality (X+Y>Z), combining algorithm vulnerability (35%), key size (20%), protocol version (15%), cert expiry (10%), and service criticality (20% with P0/P1 multipliers). The score captures the spirit of the framework — exposure urgency, migration cost, data lifetime — as a composite score, not a direct evaluation of the three-variable inequality.
+- **Pure-Python TLS Discovery**: Performs polite TLS handshakes to extract TLS versions, cipher suites, certificate key specifications (RSA/ECC/DSA), signature algorithms, and expiry dates without[...]
+- **Mosca-Inspired Quantum Risk Score (MWQRS)**: Calculates a 0–100 quantum vulnerability score using a weighted composite inspired by Mosca's Inequality (X+Y>Z), combining algorithm vulnerabili[...]
 - **CycloneDX CBOM Export**: Generates standardized Cryptographic Bill of Materials documents in CycloneDX Specification 1.6 JSON format.
-- **PQC Migration Simulator & Blast Radius**: Maps vulnerable classical algorithms to NIST FIPS 203 (ML-KEM-768), FIPS 204 (ML-DSA-65), and FIPS 205 (SLH-DSA) standards, analyzes dependency graph blast radius via NetworkX, and computes topological migration sequences.
-- **Multi-Language Source Code Scanner**: Scans repository source code (AST + regex rules across Python, Java, JS, C/C++) for MD5/SHA1 weak hashing, DES ciphers, weak RSA generation, and exposed private keys.
+- **PQC Migration Simulator & Blast Radius**: Maps vulnerable classical algorithms to NIST FIPS 203 (ML-KEM-768), FIPS 204 (ML-DSA-65), and FIPS 205 (SLH-DSA) standards, analyzes dependency graph [...]
+- **Multi-Language Source Code Scanner**: Scans repository source code (AST + regex rules across Python, Java, JS, C/C++) for MD5/SHA1 weak hashing, DES ciphers, weak RSA generation, and exposed p[...]
 - **Executive Web Dashboard**: Interactive Streamlit GUI featuring Plotly distribution charts, network dependency graphs, CBOM exporter, requirement mapping views, and real-time TLS scanner.
 
 ---
@@ -21,10 +28,10 @@ ECDAT (Enterprise Cryptographic Discovery & Analysis Tool) is an automated crypt
 
 | Component File | Role & Functionality |
 | :--- | :--- |
-| [ecdat_scanner.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/ecdat_scanner.py) | TLS client socket handshake sensor & risk classification engine (`scan_host`, `scan_targets`). |
+| [ecdat_scanner.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/ecdat_scanner.py) | TLS client socket handshake sensor & risk classification engine (`scan_host`, `scan_targets`).[...]
 | [ecdat_inventory.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/ecdat_inventory.py) | SQLite database manager (`ecdat.db`) & CycloneDX v1.6 CBOM exporter (`export_cbom`). |
 | [ecdat_scoring.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/ecdat_scoring.py) | MWQRS quantum risk calculation engine (`calculate_mwqrs`, `score_all_assets`). |
-| [ecdat_simulator.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/ecdat_simulator.py) | NIST PQC replacement mapper, blast-radius graph engine, and topological sequence planner. |
+| [ecdat_simulator.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/ecdat_simulator.py) | NIST PQC replacement mapper, blast-radius graph engine, and topological sequence planner. [...]
 | [ecdat_codescanner.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/ecdat_codescanner.py) | AST + regex source code scanner (`scan_source_directory`). |
 | [app.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/app.py) | Streamlit executive visual web application. |
 | [cli.py](file:///c:/Users/obaid/Downloads/ecdat_package/ecdat_package/cli.py) | Unified command-line interface orchestrating the master pipeline. |
@@ -44,7 +51,7 @@ ECDAT (Enterprise Cryptographic Discovery & Analysis Tool) is an automated crypt
 ## Running the ECDAT Pipeline
 
 ### ⚠️ IMPORTANT: Local Demo TLS Servers (Two-Terminal Requirement)
-The demo hosts in `hosts.txt` include three local loopback endpoints (`127.0.0.1:8443`, `127.0.0.1:8444`, and `127.0.0.1:8445`) representing weak legacy RSA-1024, strong RSA-3072, and medium RSA-2048 services. For these endpoints to respond during a scan, `generate_test_certs.py` **must be running continuously in a separate terminal**:
+The demo hosts in `hosts.txt` include three local loopback endpoints (`127.0.0.1:8443`, `127.0.0.1:8444`, and `127.0.0.1:8445`) representing weak legacy RSA-1024, strong RSA-3072, and medium RSA-2[...]
 
 - **Terminal 1 (Keep running continuously in background):**
   ```bash
@@ -60,7 +67,7 @@ The demo hosts in `hosts.txt` include three local loopback endpoints (`127.0.0.1
   ```
 *(Note: If Terminal 1 is not running, the local ports 8443, 8444, and 8445 will be marked as `unreachable` due to connection refusal.)*
 
-The checked-in `*.internal_cert.pem` and `*.internal_key.pem` files are demo-only fixtures generated for these local loopback TLS services. Do not reuse them for real services or production-like environments.
+The checked-in `*.internal_cert.pem` and `*.internal_key.pem` files are demo-only fixtures generated for these local loopback TLS services. Do not reuse them for real services or production-like e[...]
 
 ### 1. Execute Full Discovery Pipeline
 Run end-to-end TLS scanning, database ingestion, MWQRS scoring, code scanning, migration simulation, and CBOM export:
