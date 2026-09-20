@@ -16,6 +16,14 @@ env/
 .env
 .env.*
 
+# Certificates & Keys (whitelisting demo test fixtures)
+*.pem
+*.key
+*.pfx
+*.crt
+!*internal_cert.pem
+!*internal_key.pem
+
 # Testing & Coverage
 .pytest_cache/
 .coverage

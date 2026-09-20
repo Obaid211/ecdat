@@ -53,6 +53,7 @@ SUPPORTED_EXTENSIONS = {".py", ".js", ".java", ".c", ".cpp", ".cs", ".go", ".php
 def scan_file_content(file_path: Path) -> list:
     """Scans a single file using regex rules and AST parsing for Python files."""
     findings = []
+    seen = set()
 
     try:
         content = file_path.read_text(encoding="utf-8", errors="ignore")
@@ -65,15 +66,18 @@ def scan_file_content(file_path: Path) -> list:
     for line_no, line in enumerate(lines, 1):
         for rule_id, rule_data in CRYPTO_CODE_PATTERNS.items():
             if re.search(rule_data["pattern"], line, re.IGNORECASE):
-                findings.append({
-                    "file_path": str(file_path),
-                    "line_number": line_no,
-                    "rule_id": rule_id,
-                    "finding_type": rule_data["type"],
-                    "code_snippet": line.strip()[:150],
-                    "severity": rule_data["severity"],
-                    "scanned_at": datetime.now(timezone.utc).isoformat()
-                })
+                key = (str(file_path), line_no)
+                if key not in seen:
+                    seen.add(key)
+                    findings.append({
+                        "file_path": str(file_path),
+                        "line_number": line_no,
+                        "rule_id": rule_id,
+                        "finding_type": rule_data["type"],
+                        "code_snippet": line.strip()[:150],
+                        "severity": rule_data["severity"],
+                        "scanned_at": datetime.now(timezone.utc).isoformat()
+                    })
 
     # Python AST Detailed Inspection (if Python file)
     if file_path.suffix.lower() == ".py":
@@ -84,16 +88,19 @@ def scan_file_content(file_path: Path) -> list:
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
                     func_name = node.func.attr
                     if func_name in ["md5", "sha1"]:
-                        severity = "CRITICAL" if func_name == "md5" else "HIGH"
-                        findings.append({
-                            "file_path": str(file_path),
-                            "line_number": node.lineno,
-                            "rule_id": f"AST_WEAK_HASH_{func_name.upper()}",
-                            "finding_type": f"Python AST: Weak Hash Usage ({func_name.upper()})",
-                            "code_snippet": lines[node.lineno - 1].strip() if node.lineno <= len(lines) else "",
-                            "severity": severity,
-                            "scanned_at": datetime.now(timezone.utc).isoformat()
-                        })
+                        key = (str(file_path), node.lineno)
+                        if key not in seen:
+                            seen.add(key)
+                            severity = "CRITICAL" if func_name == "md5" else "HIGH"
+                            findings.append({
+                                "file_path": str(file_path),
+                                "line_number": node.lineno,
+                                "rule_id": f"AST_WEAK_HASH_{func_name.upper()}",
+                                "finding_type": f"Python AST: Weak Hash Usage ({func_name.upper()})",
+                                "code_snippet": lines[node.lineno - 1].strip() if node.lineno <= len(lines) else "",
+                                "severity": severity,
+                                "scanned_at": datetime.now(timezone.utc).isoformat()
+                            })
         except Exception:
             pass
 
@@ -114,7 +121,7 @@ def scan_source_directory(repo_path: str, db_path=DEFAULT_DB_PATH) -> list:
     all_findings = []
 
     if root.is_file():
-        files = [root]
+        files = [root] if root.suffix.lower() in SUPPORTED_EXTENSIONS else []
     else:
         files = [p for p in root.rglob("*") if p.is_file() and p.suffix.lower() in SUPPORTED_EXTENSIONS]
 
@@ -129,9 +136,11 @@ def scan_source_directory(repo_path: str, db_path=DEFAULT_DB_PATH) -> list:
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
 
+    cursor.execute("DELETE FROM code_findings")
+
     for item in all_findings:
         cursor.execute("""
-            INSERT INTO code_findings (file_path, line_number, rule_id, finding_type, code_snippet, severity, scanned_at)
+            INSERT OR IGNORE INTO code_findings (file_path, line_number, rule_id, finding_type, code_snippet, severity, scanned_at)
             VALUES (?, ?, ?, ?, ?, ?, ?)
         """, (
             item["file_path"], item["line_number"], item["rule_id"],

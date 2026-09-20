@@ -103,7 +103,7 @@ def classify_risk(tls_version, key_type, key_size, sig_algo, days_to_expiry):
     if days_to_expiry is not None:
         if days_to_expiry < 0:
             flags.append("CERT_EXPIRED")
-        elif days_to_expiry < 30:
+        elif days_to_expiry <= 30:
             flags.append(f"CERT_EXPIRING_SOON:{days_to_expiry}d")
 
     return flags

@@ -20,26 +20,34 @@ python3 ecdat_scanner.py --hosts hosts.txt --out real_scan_results.json
 This scans google.com, github.com, python.org, wikipedia.org (edit hosts.txt to add your own).
 You'll see a summary table in the terminal, and full details in real_scan_results.json.
 
-## 4. Test B — Reproduce the weak/strong crypto demo locally
-This is what generated the screenshot for your PPT. Run in one terminal:
+## 4. Test B — Reproduce the weak/strong crypto demo locally (Two-Terminal Requirement)
+This is what generated the screenshot for your PPT.
+
+> **CRITICAL DEMO REQUIREMENT**: For local endpoints (127.0.0.1:8443, 8444, 8445) to respond during any scan or pipeline execution, `generate_test_certs.py` MUST be running continuously in a dedicated terminal. If closed, the scan will report "Connection refused".
+
+**Terminal 1 (Keep running continuously):**
+```bash
+python generate_test_certs.py
 ```
-python3 generate_test_certs.py
-```
-Leave it running. It starts 3 local fake servers:
+Leave it running. It starts 3 local mock servers:
 - legacy-portal.internal (weak, 1024-bit RSA, expiring soon) on port 8443
-- auth-service.internal (medium, 2048-bit RSA) on port 8445
 - api-gateway.internal (strong, 3072-bit RSA) on port 8444
+- auth-service.internal (medium, 2048-bit RSA) on port 8445
 
-In a SECOND terminal, run:
-```
-python3 ecdat_scanner.py --host 127.0.0.1:8443 --out weak_test.json
-python3 ecdat_scanner.py --host 127.0.0.1:8444 --out strong_test.json
-python3 ecdat_scanner.py --host 127.0.0.1:8445 --out medium_test.json
-```
-You should see the weak one flagged with WEAK_RSA_KEY_SIZE and CERT_EXPIRING_SOON,
-and the other two showing OK / no flags.
+**Terminal 2 (Run scan or full pipeline):**
+```bash
+# Scan individual endpoints:
+python ecdat_scanner.py --host 127.0.0.1:8443 --out weak_test.json
+python ecdat_scanner.py --host 127.0.0.1:8444 --out strong_test.json
+python ecdat_scanner.py --host 127.0.0.1:8445 --out medium_test.json
 
-Take a screenshot of this terminal output for your PPT — same result as the one already provided.
+# Or run the complete automated pipeline:
+python cli.py pipeline --hosts hosts.txt
+
+# Or launch the Streamlit dashboard:
+streamlit run app.py
+```
+You will see the weak endpoint (8443) flagged with `WEAK_RSA_KEY_SIZE` and `CERT_EXPIRING_SOON`, while the other two show valid configurations.
 
 ## 5. What's NOT included (still needs building)
 This package only contains Stage 1 (Discovery/Scanning). Still to build:

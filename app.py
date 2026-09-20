@@ -20,6 +20,13 @@ import ecdat_simulator as sim_eng
 import ecdat_codescanner as code_eng
 import ecdat_scanner as scanner_core
 
+import os
+import shutil
+from datetime import datetime
+
+import ecdat_ai
+from ecdat_guide_ui import render_guide_and_assistant
+
 
 st.set_page_config(
     page_title="ECDAT — Enterprise Cryptographic Discovery",
@@ -65,7 +72,84 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-DB_PATH = inv.DEFAULT_DB_PATH
+# Sidebar Actions
+st.sidebar.image("https://img.icons8.com/color/96/shield-with-encryption.png", width=70)
+st.sidebar.title("Pipeline Controls")
+
+
+@st.cache_resource
+def get_ai_pool():
+    """One key pool per server process so cooldowns and disabled keys persist across reruns."""
+    return ecdat_ai.KeyPool.from_env()
+
+
+OFFLINE_DB_PATH = "offline_ecdat.db"
+
+
+def get_cached_dataset_label(db_path):
+    fallback_db = Path(db_path)
+    if not fallback_db.exists():
+        return "cached dataset unavailable"
+
+    try:
+        conn = sqlite3.connect(fallback_db)
+        cursor = conn.cursor()
+        cursor.execute("SELECT MAX(scanned_at), COUNT(*) FROM crypto_assets")
+        latest_scan, asset_count = cursor.fetchone()
+        conn.close()
+    except sqlite3.Error:
+        return "cached dataset metadata unavailable"
+
+    if latest_scan:
+        return f"cached public-host dataset, latest scan {latest_scan}, {asset_count} assets"
+    return f"cached public-host dataset, scan date unavailable, {asset_count} assets"
+
+
+# Mode Toggle: Live vs Cached vs Offline
+mode_selection = st.sidebar.radio(
+    "Data Source / Operating Mode",
+    ["🟢 LIVE MODE", "🟡 CACHED MODE", "🔵 OFFLINE MODE"],
+    index=0,
+    help="LIVE = current ecdat.db | CACHED = pre-saved demo_fallback.db | OFFLINE = local sovereign-ready snapshot"
+)
+
+if mode_selection == "🟡 CACHED MODE":
+    fallback_db = Path("demo_fallback.db")
+    if fallback_db.exists():
+        DB_PATH = "demo_fallback.db"
+        cached_dataset_label = get_cached_dataset_label(DB_PATH)
+        st.sidebar.warning(f"🟡 CACHED MODE ACTIVE\nUsing {cached_dataset_label}. Live database modifications are isolated.")
+    else:
+        DB_PATH = inv.DEFAULT_DB_PATH
+        st.sidebar.error("⚠️ `demo_fallback.db` not found! Falling back to live `ecdat.db`.")
+
+elif mode_selection == "🔵 OFFLINE MODE":
+    DB_PATH = OFFLINE_DB_PATH
+    offline_exists = Path(OFFLINE_DB_PATH).exists()
+
+    if offline_exists:
+        snapshot_time = datetime.fromtimestamp(os.path.getmtime(OFFLINE_DB_PATH)).strftime("%Y-%m-%d %H:%M:%S")
+        st.sidebar.info(f"🔵 OFFLINE MODE ACTIVE\nRunning locally using offline ECDAT data.\nNo external cloud dependency.\n\nSnapshot created: {snapshot_time}")
+    else:
+        st.sidebar.warning("🔵 OFFLINE MODE — no offline database found yet.")
+
+    if st.sidebar.button("📥 Initialize / Refresh Offline Data"):
+        if Path(inv.DEFAULT_DB_PATH).exists():
+            shutil.copy(inv.DEFAULT_DB_PATH, OFFLINE_DB_PATH)
+            st.sidebar.success(f"Offline snapshot created from ecdat.db at {datetime.now().strftime('%H:%M:%S')}.")
+        else:
+            inv.init_db(OFFLINE_DB_PATH)
+            st.sidebar.success("Empty offline database initialized (no live data existed to snapshot).")
+        st.rerun()
+
+    # Never silently fall back: if still missing after this point, init_db creates an empty schema so the app doesn't crash
+    inv.init_db(OFFLINE_DB_PATH)
+
+else:
+    DB_PATH = inv.DEFAULT_DB_PATH
+    st.sidebar.success("🟢 LIVE MODE ACTIVE\nConnected to live operational database (`ecdat.db`).")
+
+st.sidebar.markdown("---")
 
 # Ensure DB is initialized & scored on load
 inv.init_db(DB_PATH)
@@ -74,10 +158,14 @@ inv.init_db(DB_PATH)
 st.markdown('<div class="main-header">ECDAT — Enterprise Cryptographic Discovery & Analysis Tool</div>', unsafe_allow_html=True)
 st.markdown('<div class="sub-header">SIH26164 (NTRO / Post-Quantum Cryptography & Keyfactor AgileSec Pipeline Model)</div>', unsafe_allow_html=True)
 
-# Sidebar Actions
-st.sidebar.image("https://img.icons8.com/color/96/shield-with-encryption.png", width=70)
-st.sidebar.title("Pipeline Controls")
-st.sidebar.markdown("---")
+if mode_selection == "🟡 CACHED MODE" and Path("demo_fallback.db").exists():
+    st.info(f"🟡 **CACHED DEMO MODE ACTIVE**: Dashboard is rendering {get_cached_dataset_label(DB_PATH)} from `demo_fallback.db`.")
+elif mode_selection == "🔵 OFFLINE MODE":
+    offline_exists = Path(OFFLINE_DB_PATH).exists()
+    snap_line = f"Snapshot created: {datetime.fromtimestamp(os.path.getmtime(OFFLINE_DB_PATH)).strftime('%Y-%m-%d %H:%M:%S')}" if offline_exists else "No snapshot yet — use the sidebar button to initialize."
+    st.warning(f"🔵 **OFFLINE MODE ACTIVE** — Local sovereign-ready operation. No external cloud dependency for core analysis.\n\nDatabase: `offline_ecdat.db` | Data source: Local ECDAT snapshot | {snap_line}")
+else:
+    st.caption("🟢 **LIVE MODE ACTIVE**: Dashboard is rendering dynamic operational database from `ecdat.db`.")
 
 if st.sidebar.button("🔄 Refresh Data & Recalculate Scores"):
     score_eng.score_all_assets(DB_PATH)
@@ -88,6 +176,15 @@ if st.sidebar.button("🌱 Re-Seed Demo Services"):
     score_eng.score_all_assets(DB_PATH)
     st.sidebar.success("Demo services & dependencies re-seeded!")
 
+report_path = Path(__file__).with_name("DETAILED_TEST_REPORT.md")
+if report_path.exists():
+    st.sidebar.download_button(
+        label="📄 Download Detailed Test Report (.md)",
+        data=report_path.read_text(encoding="utf-8"),
+        file_name="DETAILED_TEST_REPORT.md",
+        mime="text/markdown",
+    )
+
 st.sidebar.markdown("---")
 st.sidebar.info("""
 **SIH Problem Statement SIH26164**
@@ -97,19 +194,98 @@ st.sidebar.info("""
 - CycloneDX CBOM Spec 1.6 Output
 """)
 
+# AI guide status (the app works fully without keys; the guide falls back to built-in answers)
+st.sidebar.markdown("---")
+st.sidebar.caption(get_ai_pool().status_text())
+st.sidebar.caption("New here? Open the 🧭 Guided Tour & Assistant tab.")
+
 # Load Scored Assets
 scored_assets = score_eng.score_all_assets(DB_PATH)
 df = pd.DataFrame(scored_assets)
 
+
+def get_risk_band(score):
+    if score >= 80:
+        return "Critical", "Immediate remediation recommended"
+    if score >= 50:
+        return "Medium", "Review and plan remediation"
+    return "Low", "No urgent cryptographic issue detected"
+
+
+def explain_risk_flag(flag):
+    if flag == "CERT_EXPIRED":
+        return "The TLS certificate is expired, so browser trust can fail and users may see a security warning."
+    if flag.startswith("CERT_EXPIRING_SOON"):
+        return "The TLS certificate expires soon and should be renewed before the deadline."
+    if flag.startswith("WEAK_RSA_KEY_SIZE"):
+        return "The RSA certificate key is smaller than recommended, which increases cryptographic risk."
+    if flag.startswith("DEPRECATED_TLS_VERSION"):
+        return "The site is using an outdated TLS version and should be upgraded."
+    return flag
+
+
+def get_scan_verdict(res, mwqrs_score):
+    flags = res.get("risk_flags") or []
+    if res.get("status") != "success":
+        return (
+            "Scan Failed",
+            "ECDAT could not complete a TLS handshake with this target.",
+            "Check that the host is reachable and serving HTTPS on the selected port.",
+            "error",
+        )
+    if "CERT_EXPIRED" in flags:
+        return (
+            "High Attention Needed",
+            "The website certificate is expired.",
+            "Renew or replace the TLS certificate immediately.",
+            "error",
+        )
+    if any(flag.startswith("WEAK_RSA_KEY_SIZE") for flag in flags):
+        return (
+            "High Attention Needed",
+            "The website uses a weak RSA certificate key.",
+            "Upgrade the certificate to at least RSA 2048-bit, preferably 3072-bit or a suitable modern alternative.",
+            "error",
+        )
+    if any(flag.startswith("CERT_EXPIRING_SOON") for flag in flags):
+        return (
+            "Needs Renewal Soon",
+            "The website certificate is close to expiry.",
+            "Renew the TLS certificate before users start seeing trust warnings.",
+            "warning",
+        )
+    if mwqrs_score >= 80:
+        return (
+            "Critical Cryptographic Risk",
+            "ECDAT calculated a critical MWQRS score for this endpoint.",
+            "Prioritize this endpoint in the PQC and TLS remediation plan.",
+            "error",
+        )
+    if mwqrs_score >= 50:
+        return (
+            "Medium Cryptographic Risk",
+            "The endpoint is functional, but its cryptographic posture should be reviewed.",
+            "Track it in the migration roadmap and review certificate strength, TLS version, and expiry.",
+            "warning",
+        )
+    return (
+        "No Immediate Issue Found",
+        "ECDAT did not detect a weak-key or certificate-expiry warning for this endpoint.",
+        "Keep monitoring certificate expiry and include the endpoint in periodic cryptographic inventory scans.",
+        "success",
+    )
+
+
 # Define Tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "📊 Executive Dashboard",
     "📋 Requirement Coverage",
     "📜 CBOM Inventory",
     "🕸️ Service Dependency Graph",
     "🚀 PQC Migration Simulator",
     "🔍 Source Code Scanner",
-    "⚡ Live TLS Scanner"
+    "⚡ Live TLS Scanner",
+    "🧭 Guided Tour & Assistant"
 ])
 
 
@@ -521,22 +697,122 @@ with tab6:
 with tab7:
     st.subheader("Run Real-Time Cryptographic Discovery Scan")
 
-    scan_target_input = st.text_input("Enter Target Host (e.g., example.com:443 or 127.0.0.1:8443)", "127.0.0.1:8443")
+    if mode_selection == "🔵 OFFLINE MODE":
+        st.warning("🔵 OFFLINE MODE\nLive TLS scanning requires network connectivity and is disabled in Offline Mode.")
+    else:
+        st.caption("ECDAT checks TLS, certificates, and cryptographic posture. It does not replace full web vulnerability scanners such as OWASP ZAP or Burp Suite.")
 
-    if st.button("⚡ Execute Live TLS Handshake & Scan"):
-        with st.spinner(f"Connecting over TLS to {scan_target_input}..."):
-            parsed = scanner_core.parse_target(scan_target_input)
-            if parsed:
-                host, port = parsed
-                res = scanner_core.scan_host(host, port)
+        if "live_scan_target" not in st.session_state:
+            st.session_state.live_scan_target = "127.0.0.1:8443"
 
-                st.json(res)
+        demo_c1, demo_c2, demo_c3 = st.columns(3)
+        if demo_c1.button("Safe Example"):
+            st.session_state.live_scan_target = "owasp.org:443"
+        if demo_c2.button("Expired Certificate"):
+            st.session_state.live_scan_target = "expired.badssl.com:443"
+        if demo_c3.button("Weak Local RSA"):
+            st.session_state.live_scan_target = "127.0.0.1:8443"
 
-                # Auto-ingest into DB
-                with open("temp_scan.json", "w") as f:
-                    json.dump([res], f)
-                inv.ingest_scan_results("temp_scan.json", DB_PATH)
-                score_eng.score_all_assets(DB_PATH)
-                st.success(f"Scanned {host}:{port} and ingested into database inventory!")
-            else:
-                st.error("Invalid target format.")
+        scan_target_input = st.text_input(
+            "Enter Target Host (e.g., example.com:443 or 127.0.0.1:8443)",
+            key="live_scan_target"
+        )
+
+        if st.button("⚡ Execute Live TLS Handshake & Scan"):
+            with st.spinner(f"Connecting over TLS to {scan_target_input}..."):
+                parsed = scanner_core.parse_target(scan_target_input)
+                if not parsed:
+                    st.error("Invalid target format.")
+                else:
+                    host, port = parsed
+                    res = scanner_core.scan_host(host, port)
+                    status = res.get("status")
+                    scan_ok = status == "success"
+                    mwqrs_score = score_eng.calculate_mwqrs(res) if scan_ok else 0.0
+                    risk_band, risk_band_help = get_risk_band(mwqrs_score)
+                    verdict, reason, recommendation, verdict_style = get_scan_verdict(res, mwqrs_score)
+
+                    if scan_ok:
+                        risk_flags = res.get("risk_flags") or []
+                        cert_key_type = res.get("cert_key_type") or "Unknown"
+                        key_size = res.get("cert_key_size_bits") or "Unknown"
+                        tls_version = res.get("tls_version") or "Unknown"
+                        days_to_expiry = res.get("days_to_expiry")
+
+                        if verdict_style == "error":
+                            st.error(f"Final verdict: {verdict}")
+                        elif verdict_style == "warning":
+                            st.warning(f"Final verdict: {verdict}")
+                        else:
+                            st.success(f"Final verdict: {verdict}")
+
+                        st.write(f"**Reason:** {reason}")
+                        st.write(f"**Recommended action:** {recommendation}")
+
+                        c1, c2, c3, c4 = st.columns(4)
+                        c1.metric("Website checked", f"{host}:{port}")
+                        c2.metric("MWQRS score", f"{mwqrs_score} / 100")
+                        c3.metric("Risk band", risk_band)
+                        c4.metric("TLS version", tls_version)
+                        st.caption(risk_band_help)
+
+                        st.metric("Certificate key", f"{cert_key_type} {key_size}b")
+
+                        if days_to_expiry is not None:
+                            st.info(f"Certificate expires in {days_to_expiry} day(s).")
+
+                        with st.expander("Plain-English explanation", expanded=True):
+                            st.write(f"ECDAT connected to **{host}:{port}** and checked how the website protects encrypted traffic.")
+                            st.write(f"The site is using **{tls_version}** with a **{cert_key_type} {key_size}-bit** certificate key.")
+                            st.write(f"The certificate is issued to **{res.get('cert_subject', 'Unknown')}**.")
+                            if risk_flags:
+                                st.write("What needs attention:")
+                                for flag in risk_flags:
+                                    st.write(f"- {explain_risk_flag(flag)}")
+                            else:
+                                st.write("No scanner warnings were found for this target.")
+
+                        with st.expander("Technical JSON details"):
+                            st.json(res)
+
+                        # Save to the inventory only in LIVE mode, so the cached demo dataset stays unchanged
+                        if mode_selection == "🟡 CACHED MODE":
+                            st.info("Cached mode: this scan is shown but not saved, so the cached demo dataset stays unchanged.")
+                        else:
+                            with open("temp_scan.json", "w") as f:
+                                json.dump([res], f)
+                            inv.ingest_scan_results("temp_scan.json", DB_PATH)
+                            score_eng.score_all_assets(DB_PATH)
+                            st.success(f"✅ Scanned {host}:{port} successfully and ingested into database inventory!")
+                    else:
+                        st.error(f"Final verdict: {verdict}")
+                        st.write(f"**Reason:** {reason}")
+                        st.write(f"**Recommended action:** {recommendation}")
+                        st.write(res.get("error") or "The target may be unreachable, blocked, or not serving TLS on this port.")
+                        with st.expander("Technical JSON details"):
+                            st.json(res)
+                        if status == "unreachable":
+                            st.warning(f"⚠️ Target unreachable — no result ingested. ({res.get('error', 'no details')})")
+                        else:
+                            st.error(f"❌ Scan error — no result ingested. Status: {status}. ({res.get('error', 'no details')})")
+
+
+# ---------------------------------------------------------
+# TAB 8: GUIDED TOUR & ASSISTANT (works offline; AI optional)
+# ---------------------------------------------------------
+with tab8:
+    def _band_counts(scores):
+        return {
+            "critical_80_plus": int((scores >= 80).sum()),
+            "medium_50_to_79": int(((scores >= 50) & (scores < 80)).sum()),
+            "low_below_50": int((scores < 50).sum()),
+        }
+
+    ai_summary = {"data_source": mode_selection, "asset_rows_in_current_database": int(len(df))}
+    if not df.empty and "risk_score" in df.columns:
+        _scores = pd.to_numeric(df["risk_score"], errors="coerce").dropna()
+        if len(_scores):
+            ai_summary.update(_band_counts(_scores))
+            ai_summary["highest_risk_score"] = round(float(_scores.max()), 1)
+            ai_summary["average_risk_score"] = round(float(_scores.mean()), 1)
+    render_guide_and_assistant(get_ai_pool(), ai_summary)

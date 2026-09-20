@@ -43,6 +43,25 @@ ECDAT (Enterprise Cryptographic Discovery & Analysis Tool) is an automated crypt
 
 ## Running the ECDAT Pipeline
 
+### ⚠️ IMPORTANT: Local Demo TLS Servers (Two-Terminal Requirement)
+The demo hosts in `hosts.txt` include three local loopback endpoints (`127.0.0.1:8443`, `127.0.0.1:8444`, and `127.0.0.1:8445`) representing weak legacy RSA-1024, strong RSA-3072, and medium RSA-2048 services. For these endpoints to respond during a scan, `generate_test_certs.py` **must be running continuously in a separate terminal**:
+
+- **Terminal 1 (Keep running continuously in background):**
+  ```bash
+  python generate_test_certs.py
+  ```
+- **Terminal 2 (Execute pipeline & launch dashboard):**
+  ```bash
+  # Execute full discovery pipeline against hosts
+  python cli.py pipeline --hosts hosts.txt
+
+  # Launch executive web dashboard
+  streamlit run app.py
+  ```
+*(Note: If Terminal 1 is not running, the local ports 8443, 8444, and 8445 will be marked as `unreachable` due to connection refusal.)*
+
+The checked-in `*.internal_cert.pem` and `*.internal_key.pem` files are demo-only fixtures generated for these local loopback TLS services. Do not reuse them for real services or production-like environments.
+
 ### 1. Execute Full Discovery Pipeline
 Run end-to-end TLS scanning, database ingestion, MWQRS scoring, code scanning, migration simulation, and CBOM export:
 ```bash

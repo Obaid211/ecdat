@@ -9,7 +9,7 @@ topological migration sequence.
 import json
 import sqlite3
 import networkx as nx
-from ecdat_inventory import DEFAULT_DB_PATH, get_db_connection, get_all_assets
+from ecdat_inventory import DEFAULT_DB_PATH, get_db_connection, get_all_assets, init_db
 
 
 PQC_MIGRATION_MAP = {
@@ -91,6 +91,7 @@ def simulate_migration(asset_id: int, db_path=DEFAULT_DB_PATH) -> dict:
     Simulates PQC migration for a given asset ID.
     Returns recommendation details, affected components, complexity rating, and roadmap position.
     """
+    init_db(db_path)
     conn = get_db_connection(db_path)
     cursor = conn.cursor()
     cursor.execute("""

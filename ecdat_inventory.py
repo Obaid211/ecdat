@@ -100,7 +100,8 @@ def init_db(db_path=DEFAULT_DB_PATH):
         finding_type TEXT NOT NULL,
         code_snippet TEXT,
         severity TEXT,
-        scanned_at TIMESTAMP
+        scanned_at TIMESTAMP,
+        UNIQUE(file_path, line_number, rule_id)
     );
     """)
 
@@ -345,13 +346,6 @@ def export_cbom(db_path=DEFAULT_DB_PATH, format="cyclonedx"):
             "name": f"TLS Endpoint {a['host']}:{a['port']}",
             "description": f"Subject: {a.get('cert_subject') or 'N/A'} | Issuer: {a.get('cert_issuer') or 'N/A'}",
             "properties": crypto_props,
-            "evidence": {
-                "identity": {
-                    "field": "host",
-                    "conformance": "scanned",
-                    "confidence": 1.0
-                }
-            }
         }
         components.append(component)
 
