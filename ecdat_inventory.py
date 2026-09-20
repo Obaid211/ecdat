@@ -319,6 +319,82 @@ def seed_demo_data(db_path=DEFAULT_DB_PATH):
     conn.close()
 
 
+def seed_offline_demo_data(db_path=DEFAULT_DB_PATH):
+    """
+    Seeds demo digital services & dependencies for OFFLINE MODE.
+
+    Uses ONLY the three local test server endpoints (127.0.0.1:8443/8444/8445).
+    Does NOT reference external public hosts (google.com, github.com, etc.).
+    All service descriptions are tagged [Local Demo/Test Environment].
+
+    Safe to call multiple times (INSERT OR IGNORE / ON CONFLICT DO UPDATE).
+    """
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    services_data = [
+        ("API Gateway",           "P0", "[Local Demo/Test Environment] Central entry point — api-gateway.internal (127.0.0.1:8444)"),
+        ("Authentication Service","P0", "[Local Demo/Test Environment] Identity verification & SSO — auth-service.internal (127.0.0.1:8445)"),
+        ("Payment Processor",     "P1", "[Local Demo/Test Environment] Encrypted transaction processing module"),
+        ("Citizen Database",      "P0", "[Local Demo/Test Environment] Central encrypted record storage"),
+        ("Internal Admin Panel",  "P2", "[Local Demo/Test Environment] Staff management dashboard"),
+        ("Legacy Portal",         "P1", "[Local Demo/Test Environment] Older citizen lookup service (deprecated crypto) — legacy-portal.internal (127.0.0.1:8443)"),
+    ]
+
+    service_map = {}
+    for name, crit, desc in services_data:
+        cursor.execute("""
+            INSERT INTO services (name, criticality, description)
+            VALUES (?, ?, ?)
+            ON CONFLICT(name) DO UPDATE SET criticality=excluded.criticality, description=excluded.description
+        """, (name, crit, desc))
+        cursor.execute("SELECT id FROM services WHERE name = ?", (name,))
+        service_map[name] = cursor.fetchone()["id"]
+
+    # Service dependency graph (same topology as seed_demo_data)
+    dependencies = [
+        (service_map["API Gateway"],           service_map["Authentication Service"]),
+        (service_map["API Gateway"],           service_map["Payment Processor"]),
+        (service_map["Authentication Service"],service_map["Citizen Database"]),
+        (service_map["Payment Processor"],     service_map["Citizen Database"]),
+        (service_map["Legacy Portal"],         service_map["Authentication Service"]),
+    ]
+    for s_id, dep_id in dependencies:
+        cursor.execute("""
+            INSERT OR IGNORE INTO service_dependencies (service_id, depends_on_service_id)
+            VALUES (?, ?)
+        """, (s_id, dep_id))
+
+    conn.commit()
+
+    # Asset → service mapping: LOCAL loopback endpoints only
+    OFFLINE_SERVICE_MAPPING = {
+        ("127.0.0.1",           8443): "Legacy Portal",
+        ("127.0.0.1",           8444): "API Gateway",
+        ("127.0.0.1",           8445): "Authentication Service",
+        # Cert-file assets use CN as host; map known test server CNs
+        ("legacy-portal.internal", 0): "Legacy Portal",
+        ("api-gateway.internal",   0): "API Gateway",
+        ("auth-service.internal",  0): "Authentication Service",
+    }
+
+    cursor.execute("SELECT id, host, port FROM crypto_assets")
+    assets = cursor.fetchall()
+    for a in assets:
+        key = (a["host"], a["port"])
+        service_name = OFFLINE_SERVICE_MAPPING.get(key, "Internal Admin Panel")
+        linked_s_id = service_map.get(service_name)
+        if linked_s_id:
+            cursor.execute(
+                "UPDATE crypto_assets SET linked_service_id = ? WHERE id = ?",
+                (linked_s_id, a["id"]),
+            )
+
+    conn.commit()
+    conn.close()
+
+
 def export_cbom(db_path=DEFAULT_DB_PATH, format="cyclonedx"):
     """
     Exports the inventory in CycloneDX CBOM (Cryptographic Bill of Materials) JSON format.

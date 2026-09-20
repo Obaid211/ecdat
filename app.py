@@ -19,6 +19,7 @@ import ecdat_scoring as score_eng
 import ecdat_simulator as sim_eng
 import ecdat_codescanner as code_eng
 import ecdat_scanner as scanner_core
+import ecdat_offline as offline_eng
 
 import os
 import shutil
@@ -127,22 +128,72 @@ elif mode_selection == "🔵 OFFLINE MODE":
     DB_PATH = OFFLINE_DB_PATH
     offline_exists = Path(OFFLINE_DB_PATH).exists()
 
-    if offline_exists:
-        snapshot_time = datetime.fromtimestamp(os.path.getmtime(OFFLINE_DB_PATH)).strftime("%Y-%m-%d %H:%M:%S")
-        st.sidebar.info(f"🔵 OFFLINE MODE ACTIVE\nRunning locally using offline ECDAT data.\nNo external cloud dependency.\n\nSnapshot created: {snapshot_time}")
-    else:
-        st.sidebar.warning("🔵 OFFLINE MODE — no offline database found yet.")
+    st.sidebar.markdown("### 🔵 OFFLINE MODE ACTIVE")
+    st.sidebar.markdown(
+        """
+| Feature | Status |
+|---|---|
+| 🌐 Internet | ❌ Blocked |
+| ☁️ External APIs | ❌ Blocked |
+| 🔭 External TLS Scan | ❌ Blocked |
+| 🔒 Local TLS Scan | ✅ Enabled |
+| 📄 Local Certificates | ✅ Enabled |
+| 🔍 Source Scanner | ✅ Enabled |
+| 🕸️ Dependency Graph | ✅ Enabled |
+| 💥 Blast Radius | ✅ Enabled |
+| 🚀 PQC Simulator | ✅ Enabled |
+| 📦 CBOM Export | ✅ Enabled |
+| 📊 Reports | ✅ Enabled |
+        """
+    )
 
-    if st.sidebar.button("📥 Initialize / Refresh Offline Data"):
-        if Path(inv.DEFAULT_DB_PATH).exists():
-            shutil.copy(inv.DEFAULT_DB_PATH, OFFLINE_DB_PATH)
-            st.sidebar.success(f"Offline snapshot created from ecdat.db at {datetime.now().strftime('%H:%M:%S')}.")
+    if offline_exists:
+        snapshot_time = datetime.fromtimestamp(
+            os.path.getmtime(OFFLINE_DB_PATH)
+        ).strftime("%Y-%m-%d %H:%M:%S")
+        st.sidebar.caption(f"DB: `offline_ecdat.db` | Last updated: {snapshot_time}")
+    else:
+        st.sidebar.warning("⚠️ No offline database yet — click Initialize below.")
+
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("**Offline Data Controls**")
+
+    if st.sidebar.button("🏗️ Initialize Offline Demo",
+                         help="Build offline_ecdat.db from local TLS servers & cert files. Does NOT copy ecdat.db."):
+        with st.sidebar:
+            with st.spinner("Initializing offline demo from local sources..."):
+                result = offline_eng.initialize_offline_demo(OFFLINE_DB_PATH)
+        tls_ok = result['tls_scanned']
+        tls_fail = result['tls_failed']
+        total = result['assets_total']
+        if tls_ok > 0 or result['cert_files_analyzed'] > 0:
+            st.sidebar.success(
+                f"✅ Offline demo ready!\n"
+                f"TLS scanned: {tls_ok} | Failed: {tls_fail}\n"
+                f"Cert files: {result['cert_files_analyzed']}\n"
+                f"Total assets: {total}"
+            )
         else:
-            inv.init_db(OFFLINE_DB_PATH)
-            st.sidebar.success("Empty offline database initialized (no live data existed to snapshot).")
+            st.sidebar.warning(
+                f"⚠️ No local TLS servers reachable (start generate_test_certs.py first).\n"
+                f"Cert files parsed: {result['cert_files_analyzed']} | Assets: {total}\n"
+                + (f"Errors: {'; '.join(result['errors'][:3])}" if result['errors'] else "")
+            )
         st.rerun()
 
-    # Never silently fall back: if still missing after this point, init_db creates an empty schema so the app doesn't crash
+    if st.sidebar.button("🔄 Refresh Offline Inventory",
+                         help="Re-scan local TLS endpoints, cert files, and source code."):
+        with st.sidebar:
+            with st.spinner("Refreshing offline inventory..."):
+                result = offline_eng.refresh_offline_inventory(OFFLINE_DB_PATH)
+        st.sidebar.success(
+            f"✅ Inventory refreshed!\n"
+            f"TLS: {result['tls_scanned']} scanned | Cert files: {result['cert_files_analyzed']}\n"
+            f"Code findings: {result['code_findings']} | Assets: {result['assets_total']}"
+        )
+        st.rerun()
+
+    # Never silently fall back: if still missing after this point, init_db creates empty schema
     inv.init_db(OFFLINE_DB_PATH)
 
 else:
@@ -162,8 +213,22 @@ if mode_selection == "🟡 CACHED MODE" and Path("demo_fallback.db").exists():
     st.info(f"🟡 **CACHED DEMO MODE ACTIVE**: Dashboard is rendering {get_cached_dataset_label(DB_PATH)} from `demo_fallback.db`.")
 elif mode_selection == "🔵 OFFLINE MODE":
     offline_exists = Path(OFFLINE_DB_PATH).exists()
-    snap_line = f"Snapshot created: {datetime.fromtimestamp(os.path.getmtime(OFFLINE_DB_PATH)).strftime('%Y-%m-%d %H:%M:%S')}" if offline_exists else "No snapshot yet — use the sidebar button to initialize."
-    st.warning(f"🔵 **OFFLINE MODE ACTIVE** — Local sovereign-ready operation. No external cloud dependency for core analysis.\n\nDatabase: `offline_ecdat.db` | Data source: Local ECDAT snapshot | {snap_line}")
+    if offline_exists:
+        snap_line = f"Last updated: {datetime.fromtimestamp(os.path.getmtime(OFFLINE_DB_PATH)).strftime('%Y-%m-%d %H:%M:%S')}"
+    else:
+        snap_line = "No data yet — click **🏗️ Initialize Offline Demo** in the sidebar."
+    st.info(
+        f"🔵 **OFFLINE MODE — Sovereign Local Analysis** | "
+        f"Database: `offline_ecdat.db` | {snap_line}  \n"
+        f"Internet: ❌ Blocked · External APIs: ❌ Blocked · "
+        f"Local TLS: ✅ · Source Scanner: ✅ · Dependency Graph: ✅ · PQC Simulator: ✅ · CBOM: ✅"
+    )
+    if not offline_exists:
+        st.warning(
+            "⚠️ **Offline database is empty.** Use the sidebar **🏗️ Initialize Offline Demo** button "
+            "to build `offline_ecdat.db` from local TLS servers and certificate files.  \n"
+            "Start local TLS test servers first: `python generate_test_certs.py`"
+        )
 else:
     st.caption("🟢 **LIVE MODE ACTIVE**: Dashboard is rendering dynamic operational database from `ecdat.db`.")
 
@@ -698,9 +763,252 @@ with tab7:
     st.subheader("Run Real-Time Cryptographic Discovery Scan")
 
     if mode_selection == "🔵 OFFLINE MODE":
-        st.warning("🔵 OFFLINE MODE\nLive TLS scanning requires network connectivity and is disabled in Offline Mode.")
-    else:
+        # ---------------------------------------------------------------
+        # OFFLINE MODE — Local TLS Scanner + Cert File Analyser
+        # ---------------------------------------------------------------
+        st.info(
+            "🔵 **OFFLINE MODE**: External network scanning is disabled.  \n"
+            "Local TLS endpoints (127.0.0.1 / localhost) and imported certificate "
+            "files are available for analysis."
+        )
+
+        st.markdown("### 🔒 Local TLS Endpoint Scanner")
+        st.caption(
+            "Scan local TLS servers running on this machine. "
+            "Start test servers with: `python generate_test_certs.py`"
+        )
+
+        if "offline_scan_target" not in st.session_state:
+            st.session_state.offline_scan_target = "127.0.0.1:8443"
+
+        # Quick-select preset buttons
+        preset_col1, preset_col2, preset_col3 = st.columns(3)
+        if preset_col1.button("⚠️ Weak :8443 (RSA-1024)", key="offline_preset_8443"):
+            st.session_state.offline_scan_target = "127.0.0.1:8443"
+        if preset_col2.button("✅ Strong :8444 (RSA-3072)", key="offline_preset_8444"):
+            st.session_state.offline_scan_target = "127.0.0.1:8444"
+        if preset_col3.button("🟡 Medium :8445 (RSA-2048)", key="offline_preset_8445"):
+            st.session_state.offline_scan_target = "127.0.0.1:8445"
+
+        scan_target_input = st.text_input(
+            "Enter Local Target (e.g., 127.0.0.1:8443 or 192.168.1.10:443)",
+            key="offline_scan_target"
+        )
+
+        if st.button("⚡ Scan Local TLS Endpoint", key="offline_tls_scan_btn"):
+            parsed = scanner_core.parse_target(scan_target_input)
+            if not parsed:
+                st.error("Invalid target format. Use host:port or host.")
+            else:
+                host, port = parsed
+                # ── NETWORK SAFETY GUARD ──────────────────────────────────
+                if offline_eng.is_blocked_in_offline_mode(host):
+                    st.error(
+                        f"❌ **OFFLINE MODE — External Host Blocked**  \n"
+                        f"Target `{host}` is an external/public host and cannot be reached "
+                        f"in Offline Mode.  \n"
+                        f"Only `127.0.0.1`, `localhost`, and RFC 1918 private addresses are allowed."
+                    )
+                else:
+                    # ── LOCAL SCAN ────────────────────────────────────────
+                    with st.spinner(f"Connecting to local TLS endpoint {host}:{port}..."):
+                        res = scanner_core.scan_host(host, port)
+                        status = res.get("status")
+                        scan_ok = status == "success"
+                        mwqrs_score = score_eng.calculate_mwqrs(res) if scan_ok else 0.0
+                        risk_band, risk_band_help = get_risk_band(mwqrs_score)
+                        verdict, reason, recommendation, verdict_style = get_scan_verdict(res, mwqrs_score)
+
+                    if scan_ok:
+                        risk_flags = res.get("risk_flags") or []
+                        cert_key_type = res.get("cert_key_type") or "Unknown"
+                        key_size = res.get("cert_key_size_bits") or "Unknown"
+                        tls_version = res.get("tls_version") or "Unknown"
+                        days_to_expiry = res.get("days_to_expiry")
+
+                        if verdict_style == "error":
+                            st.error(f"Final verdict: {verdict}")
+                        elif verdict_style == "warning":
+                            st.warning(f"Final verdict: {verdict}")
+                        else:
+                            st.success(f"Final verdict: {verdict}")
+
+                        st.write(f"**Reason:** {reason}")
+                        st.write(f"**Recommended action:** {recommendation}")
+
+                        c1, c2, c3, c4 = st.columns(4)
+                        c1.metric("Target", f"{host}:{port}")
+                        c2.metric("MWQRS score", f"{mwqrs_score} / 100")
+                        c3.metric("Risk band", risk_band)
+                        c4.metric("TLS version", tls_version)
+                        st.caption(risk_band_help)
+                        st.metric("Certificate key", f"{cert_key_type} {key_size}b")
+
+                        if days_to_expiry is not None:
+                            st.info(f"Certificate expires in {days_to_expiry} day(s).")
+
+                        with st.expander("Plain-English explanation", expanded=True):
+                            st.write(f"ECDAT connected to **{host}:{port}** (local endpoint) and checked its TLS configuration.")
+                            st.write(f"The server is using **{tls_version}** with a **{cert_key_type} {key_size}-bit** certificate key.")
+                            st.write(f"The certificate is issued to **{res.get('cert_subject', 'Unknown')}**.")
+                            if risk_flags:
+                                st.write("What needs attention:")
+                                for flag in risk_flags:
+                                    st.write(f"- {explain_risk_flag(flag)}")
+                            else:
+                                st.write("No scanner warnings found for this local endpoint.")
+
+                        with st.expander("Technical JSON details"):
+                            st.json(res)
+
+                        # Save to offline_ecdat.db
+                        offline_eng._ingest_results_direct([res], DB_PATH)
+                        inv.seed_offline_demo_data(DB_PATH)
+                        score_eng.score_all_assets(DB_PATH)
+                        st.success(
+                            f"✅ Local scan of {host}:{port} complete and saved to "
+                            f"`offline_ecdat.db`."
+                        )
+                    else:
+                        st.error(f"Final verdict: {verdict}")
+                        st.write(f"**Reason:** {reason}")
+                        st.write(f"**Recommended action:** {recommendation}")
+                        st.write(
+                            res.get("error") or
+                            "The local TLS server may not be running. "
+                            "Start it with: `python generate_test_certs.py`"
+                        )
+                        with st.expander("Technical JSON details"):
+                            st.json(res)
+                        if status == "unreachable":
+                            st.warning(
+                                f"⚠️ Local server unreachable — is `generate_test_certs.py` running? "
+                                f"({res.get('error', 'no details')})"
+                            )
+
+        # ── Scan All Local Test Servers ───────────────────────────────────
+        st.markdown("---")
+        if st.button("🔄 Scan All Local Test Servers (8443, 8444, 8445)", key="offline_scan_all_btn"):
+            with st.spinner("Scanning all local test servers..."):
+                scan_summary_rows = []
+                for local_host, local_port in offline_eng.LOCAL_TEST_SERVERS:
+                    r = scanner_core.scan_host(local_host, local_port)
+                    sc = score_eng.calculate_mwqrs(r) if r["status"] == "success" else 0.0
+                    scan_summary_rows.append({
+                        "Target": f"{local_host}:{local_port}",
+                        "Status": r["status"],
+                        "TLS": r.get("tls_version", "—"),
+                        "Key": f"{r.get('cert_key_type','?')} {r.get('cert_key_size_bits','?')}b",
+                        "Days to Expiry": r.get("days_to_expiry", "—"),
+                        "MWQRS": sc,
+                        "Flags": ", ".join(r.get("risk_flags") or []) or "OK",
+                    })
+                    if r["status"] == "success":
+                        offline_eng._ingest_results_direct([r], DB_PATH)
+
+            inv.seed_offline_demo_data(DB_PATH)
+            score_eng.score_all_assets(DB_PATH)
+            import pandas as pd
+            st.dataframe(pd.DataFrame(scan_summary_rows), use_container_width=True)
+            success_count = sum(1 for row in scan_summary_rows if row["Status"] == "success")
+            fail_count = len(scan_summary_rows) - success_count
+            if success_count > 0:
+                st.success(f"✅ Scanned {success_count} local endpoint(s) successfully. Inventory updated.")
+            if fail_count > 0:
+                st.warning(
+                    f"⚠️ {fail_count} local server(s) unreachable. "
+                    "Run `python generate_test_certs.py` in a separate terminal."
+                )
+
+        # ── Certificate File Analyser ─────────────────────────────────────
+        st.markdown("---")
+        st.markdown("### 📄 Local Certificate File Analyser")
+        st.caption(
+            "Upload a certificate file (.pem, .crt, .cer) for offline X.509 analysis. "
+            "No network connection required."
+        )
+
+        uploaded_cert = st.file_uploader(
+            "Upload Certificate File",
+            type=["pem", "crt", "cer", "der"],
+            key="offline_cert_uploader"
+        )
+
+        if uploaded_cert is not None:
+            # Write to a temp path for analysis
+            import tempfile
+            with tempfile.NamedTemporaryFile(
+                suffix=Path(uploaded_cert.name).suffix, delete=False
+            ) as tmp:
+                tmp.write(uploaded_cert.read())
+                tmp_path = Path(tmp.name)
+
+            cr = offline_eng.analyze_cert_file(tmp_path)
+            cr["host"] = cr.get("host") or Path(uploaded_cert.name).stem
+            try:
+                tmp_path.unlink()
+            except Exception:
+                pass
+
+            if cr["status"] == "success":
+                cert_mwqrs = score_eng.calculate_mwqrs(cr)
+                st.success(f"✅ Certificate parsed successfully — MWQRS: **{cert_mwqrs}/100**")
+
+                cc1, cc2, cc3 = st.columns(3)
+                cc1.metric("Key Type", cr.get("cert_key_type", "?"))
+                cc2.metric("Key Size", f"{cr.get('cert_key_size_bits', '?')} bits")
+                cc3.metric("Days to Expiry", cr.get("days_to_expiry", "?"))
+
+                with st.expander("Certificate Details", expanded=True):
+                    st.write(f"**Subject:** {cr.get('cert_subject', 'N/A')}")
+                    st.write(f"**Issuer:** {cr.get('cert_issuer', 'N/A')}")
+                    st.write(f"**Signature Algorithm:** {cr.get('cert_signature_algorithm', 'N/A')}")
+                    st.write(f"**Not After:** {cr.get('cert_not_after', 'N/A')}")
+                    flags = cr.get("risk_flags") or []
+                    if flags:
+                        st.write("**Risk Flags:**")
+                        for flag in flags:
+                            st.write(f"  - {explain_risk_flag(flag)}")
+                    else:
+                        st.write("**Risk Flags:** None")
+
+                if st.button("💾 Add Certificate to Offline Inventory", key="offline_add_cert_btn"):
+                    offline_eng._ingest_results_direct([cr], DB_PATH)
+                    score_eng.score_all_assets(DB_PATH)
+                    st.success(
+                        f"Certificate '{cr['host']}' added to "
+                        f"`offline_ecdat.db` inventory."
+                    )
+                    st.rerun()
+            else:
+                st.error(
+                    f"❌ Could not parse certificate file: {cr.get('error', 'unknown error')}  \n"
+                    "Ensure the file is a valid DER or PEM encoded X.509 certificate."
+                )
+
+        # ── Auto-discovered local cert files ──────────────────────────────
+        local_certs = offline_eng.find_local_cert_files(".")
+        if local_certs:
+            st.markdown("---")
+            st.markdown("### 📁 Auto-Discovered Local Certificate Files")
+            st.caption("Certificate files found in the project directory (generated by `generate_test_certs.py`).")
+            for cp in local_certs:
+                cr = offline_eng.analyze_cert_file(cp)
+                if cr["status"] == "success":
+                    cert_mwqrs = score_eng.calculate_mwqrs(cr)
+                    risk_color = "🔴" if cert_mwqrs >= 80 else ("🟠" if cert_mwqrs >= 50 else "🟢")
+                    st.write(
+                        f"{risk_color} **{cp.name}** — "
+                        f"{cr.get('cert_key_type')} {cr.get('cert_key_size_bits')}b | "
+                        f"Expires: {cr.get('days_to_expiry')}d | "
+                        f"MWQRS: {cert_mwqrs}"
+                    )
+                else:
+                    st.write(f"⚠️ **{cp.name}** — Parse error: {cr.get('error')}")
+
+    else:  # LIVE MODE or CACHED MODE scanner
         st.caption("ECDAT checks TLS, certificates, and cryptographic posture. It does not replace full web vulnerability scanners such as OWASP ZAP or Burp Suite.")
+
 
         if "live_scan_target" not in st.session_state:
             st.session_state.live_scan_target = "127.0.0.1:8443"
