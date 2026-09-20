@@ -1,0 +1,24 @@
+# CONTROLLED TEST FIXTURE: Legacy Container Service (Simulated Vulnerable Environment)
+# Used for demonstrating ECDAT container cryptographic scanning without external internet.
+FROM ubuntu:16.04
+
+# Deprecated cryptographic packages
+RUN apt-get update && apt-get install -y \
+    openssl \
+    libssl-dev \
+    curl \
+    ca-certificates
+
+# Insecure practice: embedding private key directly in container layer
+COPY server_key.pem /etc/ssl/private/legacy.key
+COPY server_cert.pem /etc/ssl/certs/legacy.crt
+
+# Insecure runtime settings: downgrading OpenSSL security level to SECLEVEL=0
+ENV OPENSSL_CONF=/etc/ssl/openssl.cnf
+RUN sed -i 's/DEFAULT@SECLEVEL=2/DEFAULT:@SECLEVEL=0/' /etc/ssl/openssl.cnf
+
+# Insecure script using disabled TLS verification and legacy RSA-1024
+RUN echo "curl -k https://internal-api/auth" >> /start.sh
+RUN echo "openssl genrsa 1024 > /tmp/temp.key" >> /start.sh
+
+CMD ["/start.sh"]

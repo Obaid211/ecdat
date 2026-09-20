@@ -66,8 +66,8 @@ shutil.copy(DB_PATH, FALLBACK_DB)
 if Path(SCAN_JSON).exists():
     shutil.copy(SCAN_JSON, FALLBACK_JSON)
 
-print(f"\n✅ {FALLBACK_DB} regenerated with {service_count} services, {dep_count} edges.")
-print(f"✅ {FALLBACK_JSON} regenerated.")
+print(f"\n[SUCCESS] {FALLBACK_DB} regenerated with {service_count} services, {dep_count} edges.")
+print(f"[SUCCESS] {FALLBACK_JSON} regenerated.")
 print("\nNext: switch app.py to CACHED MODE and manually verify:")
 print("  1. Service Dependency Graph tab shows 6 nodes, 5 edges (not blank)")
 print("  2. PQC Migration Simulator on 127.0.0.1:8443 shows 5 affected services, High complexity")

@@ -1,0 +1,20 @@
+{
+  "api_url": "https://pqc-identity.internal:8445/api/v1/pqc/identity",
+  "method": "POST",
+  "status_code": 200,
+  "description": "CONTROLLED TEST FIXTURE: Post-Quantum Prototype API emitting NIST FIPS 204 ML-DSA-65 token",
+  "tls_info": {
+    "version": "TLSv1.3",
+    "cipher_suite": "TLS_AES_256_GCM_SHA384",
+    "cert_key_type": "ML-KEM-768",
+    "cert_key_size_bits": 768,
+    "cert_signature_algorithm": "ml-dsa-65",
+    "days_to_expiry": 365
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+    "X-Crypto-Provider": "OpenQuantumSafe-liboqs"
+  },
+  "sample_jwt": "eyJhbGciOiJNTC1EU0EtNjUiLCJ0eXAiOiJKV1QifQ.eyJzdWIiOiJwb3N0LXF1YW50dW0tc2VydmljZSJ9.signature_placeholder_789"
+}

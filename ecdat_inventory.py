@@ -105,6 +105,53 @@ def init_db(db_path=DEFAULT_DB_PATH):
     );
     """)
 
+    # Table: scan_snapshots (for 24-hour rescan diff tracking)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS scan_snapshots (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL,
+        asset_count INTEGER NOT NULL,
+        avg_risk REAL,
+        critical_count INTEGER,
+        medium_count INTEGER,
+        safe_count INTEGER,
+        snapshot_data TEXT NOT NULL
+    );
+    """)
+
+    # Table: container_findings (for container / Dockerfile scanning)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS container_findings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        target_path TEXT NOT NULL,
+        component TEXT,
+        finding_type TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        evidence TEXT,
+        recommendation TEXT,
+        scanned_at TIMESTAMP NOT NULL
+    );
+    """)
+
+    # Table: api_findings (for API crypto scanning)
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS api_findings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        endpoint TEXT NOT NULL,
+        method TEXT DEFAULT 'GET',
+        tls_version TEXT,
+        cert_key TEXT,
+        jwt_algorithm TEXT,
+        hsts_enabled INTEGER DEFAULT 0,
+        security_headers TEXT,
+        risk_level TEXT,
+        findings TEXT,
+        recommendation TEXT,
+        scanned_at TIMESTAMP NOT NULL
+    );
+    """)
+
     conn.commit()
     conn.close()
 
@@ -450,6 +497,194 @@ def export_cbom(db_path=DEFAULT_DB_PATH, format="cyclonedx"):
     }
 
     return json.dumps(cbom_document, indent=2)
+
+
+def get_normalized_inventory(db_path=DEFAULT_DB_PATH):
+    """
+    Returns the normalized cryptographic inventory per Capability 1.
+    All fields are genuinely extracted from database records or calculated.
+    """
+    init_db(db_path)
+    assets = get_all_assets(db_path)
+    normalized = []
+
+    for a in assets:
+        key_type = (a.get("cert_key_type") or "Unknown").strip()
+        key_size = a.get("cert_key_size_bits")
+        key_size_val = int(key_size) if key_size is not None and str(key_size).isdigit() else None
+        mwqrs = float(a.get("risk_score") or 0.0)
+        flags = a.get("risk_flags") or []
+        if isinstance(flags, str):
+            try:
+                flags = json.loads(flags)
+            except Exception:
+                flags = [flags]
+
+        # Algorithm Category
+        key_upper = key_type.upper()
+        if any(x in key_upper for x in ["RSA", "ECC", "ECDSA", "ED25519", "DSA", "DH"]):
+            algo_cat = "Asymmetric / Public-Key"
+        elif any(x in key_upper for x in ["ML-KEM", "KYBER"]):
+            algo_cat = "PQC Key Encapsulation (FIPS 203)"
+        elif any(x in key_upper for x in ["ML-DSA", "SLH-DSA", "DILITHIUM", "SPHINCS"]):
+            algo_cat = "PQC Digital Signature (FIPS 204/205)"
+        elif any(x in key_upper for x in ["AES", "CHACHA", "3DES", "DES"]):
+            algo_cat = "Symmetric Cipher"
+        else:
+            algo_cat = "Public-Key Cryptography"
+
+        # Severity band
+        if mwqrs >= 80.0:
+            severity = "Critical"
+        elif mwqrs >= 50.0:
+            severity = "Medium"
+        else:
+            severity = "Low"
+
+        # Quantum Vulnerability Classification
+        is_pqc = "ML-" in key_upper or "KYBER" in key_upper or "DILITHIUM" in key_upper or any("PQC_MIGRATED" in str(f) for f in flags)
+        if is_pqc:
+            qv_status = "Quantum-Resistant (NIST PQC Standardized)"
+            rec_pqc = "Already PQC-Migrated (Monitor NIST guidance)"
+            mig_status = "Migrated"
+        elif any(x in key_upper for x in ["RSA", "ECC", "ECDSA", "DSA", "DH"]):
+            qv_status = "Quantum-Vulnerable (Shor's Algorithm on future CRQC)"
+            if "RSA" in key_upper:
+                rec_pqc = "NIST FIPS 203 (ML-KEM-768 for KEM) / FIPS 204 (ML-DSA-65 for Signatures)"
+            elif "ECC" in key_upper or "ECDSA" in key_upper:
+                rec_pqc = "NIST FIPS 204 (ML-DSA-65) / FIPS 205 (SLH-DSA) for Signatures"
+            else:
+                rec_pqc = "NIST FIPS 204 (ML-DSA-65) Digital Signatures"
+            mig_status = "Migration Required"
+        else:
+            qv_status = "Under Review / Unclassified"
+            rec_pqc = "Review cryptographic algorithm profile"
+            mig_status = "Review Required"
+
+        # Source
+        source = "Local Certificate File" if a.get("port") == 0 else "TLS Handshake"
+        if a.get("host", "").startswith("127.") or a.get("host") == "localhost":
+            source += " (Controlled Test Fixture)"
+
+        # Cipher string
+        cipher_str = a.get("cipher_suite") or "N/A"
+        if a.get("cipher_bits"):
+            cipher_str += f" ({a['cipher_bits']}-bit)"
+
+        norm_item = {
+            "asset_id": a["id"],
+            "host": a["host"],
+            "port": a["port"],
+            "service": a.get("service_name") or "Unassigned Service",
+            "service_criticality": a.get("service_criticality") or "P2",
+            "algorithm": key_type,
+            "algorithm_category": algo_cat,
+            "key_size": key_size_val if key_size_val else "Unknown",
+            "tls_version": a.get("tls_version") or "Unknown",
+            "cipher_info": cipher_str,
+            "cert_subject": a.get("cert_subject") or "N/A",
+            "cert_issuer": a.get("cert_issuer") or "N/A",
+            "cert_expiry": a.get("cert_not_after") or "N/A",
+            "days_to_expiry": a.get("days_to_expiry"),
+            "source": source,
+            "mwqrs": mwqrs,
+            "severity": severity,
+            "quantum_status": qv_status,
+            "recommended_pqc": rec_pqc,
+            "migration_status": mig_status,
+            "risk_flags": flags,
+        }
+        normalized.append(norm_item)
+
+    return normalized
+
+
+def save_scan_snapshot(name: str, db_path=DEFAULT_DB_PATH) -> int:
+    """
+    Saves a snapshot of current crypto_assets to the scan_snapshots table.
+    Enables historical tracking and 24-hour rescan diff comparisons.
+    """
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+
+    assets = get_normalized_inventory(db_path)
+    asset_count = len(assets)
+    if asset_count > 0:
+        avg_risk = round(sum(a["mwqrs"] for a in assets) / asset_count, 1)
+    else:
+        avg_risk = 0.0
+
+    critical_count = sum(1 for a in assets if a["mwqrs"] >= 80.0)
+    medium_count = sum(1 for a in assets if 50.0 <= a["mwqrs"] < 80.0)
+    safe_count = sum(1 for a in assets if a["mwqrs"] < 50.0)
+
+    now_iso = datetime.now(timezone.utc).isoformat()
+    data_json = json.dumps(assets, indent=2)
+
+    cursor.execute("""
+        INSERT INTO scan_snapshots (name, created_at, asset_count, avg_risk, critical_count, medium_count, safe_count, snapshot_data)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (name, now_iso, asset_count, avg_risk, critical_count, medium_count, safe_count, data_json))
+
+    snapshot_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return snapshot_id
+
+
+def get_scan_snapshots(db_path=DEFAULT_DB_PATH) -> list:
+    """Returns metadata for all recorded scan snapshots."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, name, created_at, asset_count, avg_risk, critical_count, medium_count, safe_count
+        FROM scan_snapshots
+        ORDER BY id DESC
+    """)
+    rows = [dict(r) for r in cursor.fetchall()]
+    conn.close()
+    return rows
+
+
+def get_snapshot_by_id(snapshot_id: int, db_path=DEFAULT_DB_PATH) -> dict:
+    """Retrieves full snapshot data including asset inventory list."""
+    init_db(db_path)
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM scan_snapshots WHERE id = ?", (snapshot_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if not row:
+        return None
+    d = dict(row)
+    try:
+        d["assets"] = json.loads(d["snapshot_data"])
+    except Exception:
+        d["assets"] = []
+    return d
+
+
+def export_inventory_csv(db_path=DEFAULT_DB_PATH) -> str:
+    """Returns normalized inventory in CSV format."""
+    import io, csv
+    assets = get_normalized_inventory(db_path)
+    if not assets:
+        return "Asset ID,Host,Port,Service,Algorithm,Key Size,TLS Version,MWQRS,Severity,Quantum Status\n"
+
+    output = io.StringIO()
+    fields = [
+        "asset_id", "host", "port", "service", "service_criticality", "algorithm",
+        "algorithm_category", "key_size", "tls_version", "cipher_info", "cert_issuer",
+        "cert_expiry", "days_to_expiry", "source", "mwqrs", "severity", "quantum_status",
+        "recommended_pqc", "migration_status"
+    ]
+    writer = csv.DictWriter(output, fieldnames=fields, extrasaction="ignore")
+    writer.writeheader()
+    for a in assets:
+        writer.writerow(a)
+    return output.getvalue()
 
 
 if __name__ == "__main__":

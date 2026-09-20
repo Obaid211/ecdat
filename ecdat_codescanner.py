@@ -19,31 +19,55 @@ CRYPTO_CODE_PATTERNS = {
         "pattern": r"hashlib\.md5\(|MD5\(|CryptoJS\.MD5|MessageDigest\.getInstance\(['\"]MD5['\"]\)",
         "severity": "CRITICAL",
         "type": "Weak Hashing Algorithm (MD5)",
+        "crypto_technology": "Cryptographic Hash (MD5)",
+        "confidence": "HIGH",
+        "explanation": "MD5 is cryptographically broken due to collision vulnerabilities. It should never be used for digital signatures or security-sensitive integrity checks.",
+        "remediation": "Replace with SHA-256 / SHA-3 or secure password derivation (Argon2id, bcrypt, PBKDF2).",
     },
     "WEAK_HASH_SHA1": {
         "pattern": r"hashlib\.sha1\(|SHA1\(|CryptoJS\.SHA1|MessageDigest\.getInstance\(['\"]SHA-1['\"]\)",
         "severity": "HIGH",
         "type": "Weak Hashing Algorithm (SHA-1)",
+        "crypto_technology": "Cryptographic Hash (SHA-1)",
+        "confidence": "HIGH",
+        "explanation": "SHA-1 has practical collision attacks demonstrated. Prohibited by NIST SP 800-52 Rev. 2 and CA/Browser forum.",
+        "remediation": "Migrate to SHA-256, SHA-384, or SHA-512.",
     },
     "WEAK_CIPHER_DES": {
         "pattern": r"DES\.new\(|DES3\.new\(|Cipher\.getInstance\(['\"]DES['\"]\)",
         "severity": "CRITICAL",
         "type": "Deprecated Block Cipher (DES/3DES)",
+        "crypto_technology": "Symmetric Block Cipher (DES)",
+        "confidence": "HIGH",
+        "explanation": "DES uses an obsolete 56-bit key size vulnerable to brute force in minutes. 3DES is deprecated by NIST (SP 800-131A).",
+        "remediation": "Upgrade to AES-256-GCM or ChaCha20-Poly1305.",
     },
     "HARDCODED_RSA_KEY": {
         "pattern": r"RSA\.generate\(\s*(1024|512)\b",
         "severity": "HIGH",
         "type": "Weak RSA Key Generation (<2048 bits)",
+        "crypto_technology": "Asymmetric Key Pair (RSA)",
+        "confidence": "HIGH",
+        "explanation": "RSA key lengths under 2048 bits are vulnerable to classical factorization attacks and violate NIST baseline guidelines.",
+        "remediation": "Increase RSA key size to at least 2048-bit (preferably 3072-bit) and plan PQC transition to ML-KEM-768.",
     },
     "HARDCODED_PRIVATE_KEY": {
         "pattern": r"-----BEGIN (?:RSA |EC |DSA )?PRIVATE KEY-----",
         "severity": "CRITICAL",
         "type": "Hardcoded Cryptographic Private Key",
+        "crypto_technology": "PKI Private Key Material",
+        "confidence": "HIGH",
+        "explanation": "Hardcoded private keys embedded in source code can be extracted through version history or binary inspection.",
+        "remediation": "Remove key immediately from repository. Re-issue and inject credentials via environment variables or KMS.",
     },
     "HARDCODED_SECRET_STRING": {
         "pattern": r"(?:api[_\-]?key|secret[_\-]?key|private[_\-]?key)\s*=\s*['\"][A-Za-z0-9+/=_\-]{16,}['\"]",
         "severity": "MEDIUM",
         "type": "Hardcoded Secret Key String",
+        "crypto_technology": "Authentication Secret",
+        "confidence": "MEDIUM",
+        "explanation": "Potential plaintext credential or API secret hardcoded in source code.",
+        "remediation": "Move secrets to .env, runtime configuration, or a vault solution.",
     }
 }
 
@@ -73,9 +97,14 @@ def scan_file_content(file_path: Path) -> list:
                         "file_path": str(file_path),
                         "line_number": line_no,
                         "rule_id": rule_id,
-                        "finding_type": rule_data["type"],
+                        "finding_type": f"Crypto-related finding: {rule_data['type']}",
                         "code_snippet": line.strip()[:150],
                         "severity": rule_data["severity"],
+                        "crypto_technology": rule_data.get("crypto_technology", "General Cryptography"),
+                        "confidence": rule_data.get("confidence", "HIGH"),
+                        "explanation": rule_data.get("explanation", ""),
+                        "remediation": rule_data.get("remediation", ""),
+                        "matched_pattern": rule_data["pattern"],
                         "scanned_at": datetime.now(timezone.utc).isoformat()
                     })
 
@@ -96,9 +125,14 @@ def scan_file_content(file_path: Path) -> list:
                                 "file_path": str(file_path),
                                 "line_number": node.lineno,
                                 "rule_id": f"AST_WEAK_HASH_{func_name.upper()}",
-                                "finding_type": f"Python AST: Weak Hash Usage ({func_name.upper()})",
+                                "finding_type": f"Crypto-related finding: Python AST Weak Hash ({func_name.upper()})",
                                 "code_snippet": lines[node.lineno - 1].strip() if node.lineno <= len(lines) else "",
                                 "severity": severity,
+                                "crypto_technology": f"Cryptographic Hash ({func_name.upper()})",
+                                "confidence": "HIGH (AST Verified)",
+                                "explanation": f"AST analysis confirms direct invocation of Python's hashlib.{func_name}(), which produces weak digests.",
+                                "remediation": "Replace with hashlib.sha256() or hashlib.sha3_256().",
+                                "matched_pattern": f"hashlib.{func_name}()",
                                 "scanned_at": datetime.now(timezone.utc).isoformat()
                             })
         except Exception:

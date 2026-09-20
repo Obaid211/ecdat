@@ -1,0 +1,20 @@
+{
+  "api_url": "https://api-gateway.internal:8444/api/v1/payment/verify",
+  "method": "GET",
+  "status_code": 200,
+  "description": "CONTROLLED TEST FIXTURE: Modern API Gateway emitting ECDSA-signed JWT with HSTS",
+  "tls_info": {
+    "version": "TLSv1.3",
+    "cipher_suite": "TLS_AES_256_GCM_SHA384",
+    "cert_key_type": "ECC (secp384r1)",
+    "cert_key_size_bits": 384,
+    "cert_signature_algorithm": "ecdsa-with-sha384",
+    "days_to_expiry": 210
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
+    "X-Content-Type-Options": "nosniff"
+  },
+  "sample_jwt": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhdXRoLXVzZXIiLCJyb2xlIjoiYXBpLWdhdGV3YXkifQ.signature_placeholder_456"
+}

@@ -1,0 +1,15 @@
+# CONTROLLED TEST FIXTURE: Modern PQC-Ready Container Service
+# Demonstrates container with updated cryptographic stack and OQS integration.
+FROM alpine:3.20
+
+RUN apk update && apk add --no-cache \
+    openssl \
+    ca-certificates \
+    liboqs
+
+# Runtime secrets are mounted dynamically via Kubernetes secrets, NOT embedded in image
+# PQC provider configuration
+ENV OPENSSL_MODULES=/usr/lib/ossl-modules
+ENV OQS_PROVIDER_ENABLED=1
+
+CMD ["echo", "PQC-ready container service initialized with ML-KEM and ML-DSA support"]

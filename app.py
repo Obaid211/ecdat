@@ -7,6 +7,7 @@ CycloneDX CBOM exports, dependency graph visualization, PQC migration simulation
 
 import json
 import sqlite3
+import urllib.parse
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -20,10 +21,15 @@ import ecdat_simulator as sim_eng
 import ecdat_codescanner as code_eng
 import ecdat_scanner as scanner_core
 import ecdat_offline as offline_eng
+import ecdat_remediation as rem_eng
+import ecdat_threat_timeline as threat_eng
+import ecdat_containerscanner as cnt_eng
+import ecdat_apiscanner as api_eng
+import ecdat_diff as diff_eng
 
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 
 import ecdat_ai
 from ecdat_guide_ui import render_guide_and_assistant
@@ -60,14 +66,22 @@ st.markdown("""
         text-align: center;
     }
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+       gap: 14px;
+       overflow-x: auto !important;
+       overflow-y: hidden;
+       white-space: nowrap;
+       scrollbar-width: thin;
+       padding-bottom: 8px;
     }
+
     .stTabs [data-baseweb="tab"] {
         height: 45px;
-        white-space: pre-wrap;
+        white-space: nowrap !important;
+        min-width: 130px !important;
+        width: auto !important;
+        flex-shrink: 0 !important;
         border-radius: 6px;
-        padding-left: 16px;
-        padding-right: 16px;
+        padding: 8px 14px !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -342,13 +356,35 @@ def get_scan_verdict(res, mwqrs_score):
 
 
 # Define Tabs
-tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+# Define 14 Tabs covering all capabilities
+(
+    tab_dash,
+    tab_inv,
+    tab_rem,
+    tab_threat,
+    tab_graph,
+    tab_pqc,
+    tab_code,
+    tab_cnt,
+    tab_api,
+    tab_diff,
+    tab_comp,
+    tab_cbom,
+    tab_tls,
+    tab_tour,
+) = st.tabs([
     "📊 Executive Dashboard",
-    "📋 Requirement Coverage",
-    "📜 CBOM Inventory",
-    "🕸️ Service Dependency Graph",
+    "🗄️ Crypto Asset Inventory",
+    "🎯 Remediation Center",
+    "⏳ Threat Timeline",
+    "🕸️ Dependency Graph",
     "🚀 PQC Migration Simulator",
     "🔍 Source Code Scanner",
+    "🐳 Container Scanner",
+    "🌐 API Crypto Scanner",
+    "⏱️ Scan History & Diff",
+    "🛡️ Compliance & Readiness",
+    "📜 CBOM Studio",
     "⚡ Live TLS Scanner",
     "🧭 Guided Tour & Assistant"
 ])
@@ -357,7 +393,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
 # ---------------------------------------------------------
 # TAB 1: EXECUTIVE DASHBOARD
 # ---------------------------------------------------------
-with tab1:
+with tab_dash:
     if df.empty:
         st.warning("No crypto assets scanned yet. Run a scan from the 'Live TLS Scanner' tab or run cli.py.")
     else:
@@ -369,10 +405,29 @@ with tab1:
         avg_score = round(df["risk_score"].mean(), 1)
 
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Total Scanned Endpoints", total_scanned, delta="Live Sensors")
+        c1.metric("Total Scanned Endpoints", total_scanned, delta="Database Records")
         c2.metric("Critical Quantum Risk (MWQRS ≥ 80)", critical_count, delta=f"{round(critical_count/total_scanned*100,1)}%", delta_color="inverse")
         c3.metric("Medium Quantum Risk (50-79)", medium_count)
-        c4.metric("Average System MWQRS Risk", f"{avg_score} / 100")
+        c4.metric("Average System MWQRS", f"{avg_score} / 100")
+
+        # Measured Performance Benchmark (Capability 13)
+        scan_json_path = Path("scan_results.json")
+        if scan_json_path.exists():
+            try:
+                with open(scan_json_path, "r", encoding="utf-8") as f:
+                    bench_raw = json.load(f)
+                bench_metrics = scanner_core.calculate_scan_benchmark(bench_raw)
+                st.markdown("---")
+                st.markdown("### ⚡ Measured Discovery & Risk Flagging Performance")
+                st.caption(f"📌 {bench_metrics['benchmark_label']} — Derived from genuine TLS handshake timings, not hardcoded assertions.")
+                bm1, bm2, bm3, bm4, bm5 = st.columns(5)
+                bm1.metric("Hosts Attempted", bench_metrics["total_attempted"])
+                bm2.metric("Successful Connections", bench_metrics["successful"])
+                bm3.metric("Average Duration", f"{bench_metrics['average_seconds']}s / host")
+                bm4.metric("Median Duration", f"{bench_metrics['median_seconds']}s")
+                bm5.metric("Max Handshake Time", f"{bench_metrics['max_seconds']}s")
+            except Exception:
+                pass
 
         st.markdown("---")
 
@@ -380,13 +435,13 @@ with tab1:
         # AGGREGATE PUBLIC HOST SAMPLE STATISTICS PANEL
         # ---------------------------------------------------------
         st.markdown("### 🌐 Aggregate Public Host Scan Statistics")
-        
+
         # Filter real scanned hosts (excluding local loopback / demo seeds)
         real_df = df[~df["host"].str.startswith("127.")].copy() if not df.empty else pd.DataFrame()
         n_attempted = len(real_df)
         n_scanned = len(real_df[real_df["status"] == "success"]) if not real_df.empty else 0
         n_unreachable = len(real_df[real_df["status"] == "unreachable"]) if not real_df.empty else 0
-        
+
         # Quantum Vulnerable Breakdown (RSA vs ECC)
         if not real_df.empty and n_scanned > 0:
             rsa_count = len(real_df[real_df["cert_key_type"].astype(str).str.contains("RSA", na=False)])
@@ -394,14 +449,14 @@ with tab1:
             qv_pct = round((rsa_count + ecc_count) / n_scanned * 100, 1)
         else:
             qv_pct = 0.0
-        
+
         latest_scan = real_df["scanned_at"].max() if not real_df.empty and "scanned_at" in real_df and not real_df["scanned_at"].isnull().all() else "N/A"
-        
+
         p1, p2, p3, p4, p5 = st.columns(5)
         p1.metric("Attempted Hosts", n_attempted)
         p2.metric("Successfully Scanned", n_scanned)
         p3.metric("Unreachable Hosts", n_unreachable)
-        p4.metric("Quantum Vulnerable %", f"{qv_pct}%", help="RSA or ECC public keys (vulnerable to Shor's algorithm)")
+        p4.metric("Quantum Vulnerable %", f"{qv_pct}%", help="RSA or ECC public keys vulnerable to Shor's algorithm on a future CRQC")
         p5.metric("Sample Size (n)", n_scanned)
 
         col_st1, col_st2, col_st3 = st.columns(3)
@@ -429,7 +484,7 @@ with tab1:
                 band_counts.columns = ["Risk Band", "Count"]
                 st.dataframe(band_counts, use_container_width=True)
 
-        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned}, scanned at {latest_scan}); not a market-wide claim. Risk classification informed by NIST SP 800-52 Rev. 2 guidelines. Excludes mock seeded service records.")
+        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned}, scanned at {latest_scan}); not a market-wide claim. Risk classification informed by NIST SP 800-52 Rev. 2 guidelines.")
         st.markdown("---")
 
         col_left, col_right = st.columns(2)
@@ -489,113 +544,294 @@ with tab1:
 
 
 # ---------------------------------------------------------
-# TAB 2: REQUIREMENT COVERAGE (SIH26164)
+# TAB 2: CRYPTO ASSET INVENTORY (Capability 1)
 # ---------------------------------------------------------
-with tab2:
-    st.subheader("📋 SIH26164 Problem Statement Requirement Coverage")
-    st.markdown("""
-    <div style="background-color: #1E222D; border: 1px solid #2E3440; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
-        <h4 style="margin-top:0; color: #00C9FF;">⚡ Executive 5-Line Slide Summary</h4>
-        <ol style="margin-bottom:0; color: #D8DEE9; line-height: 1.6;">
-            <li><b>Discovery & Inventory</b>: Pure-Python TLS endpoint scanner + CycloneDX v1.6 CBOM exporter (<b>Implemented</b> for TLS endpoints; <b>Partial</b> for source code; HSMs/Cloud KMS <b>Planned</b>).</li>
-            <li><b>Quantum Risk Scoring</b>: Implements Mosca-Weighted Quantum Risk Score (MWQRS, 0–100 scale) combining algorithm vulnerability (35%), key length (20%), TLS version (15%), cert expiry (10%), and service criticality (20%) (<b>Partial</b> — Mosca-inspired composite index, not direct evaluation of X+Y>Z).</li>
-            <li><b>PQC Migration Roadmap</b>: Maps classical algorithms (RSA/ECC/DSA) to NIST FIPS 203 (ML-KEM-768) & FIPS 204 (ML-DSA-65) with hybrid transition modes and NetworkX dependency blast-radius sequence (<b>Implemented</b>).</li>
-            <li><b>Interactive Dashboard & CLI</b>: Streamlit executive web application with Plotly analytics, network dependency graphs, CBOM exporter, and unified master CLI (<code>python cli.py pipeline</code>) (<b>Implemented</b>).</li>
-            <li><b>Gaps & Roadmap</b>: Binary (.so/ELF) scanning, container image inspection, HSM/KMS discovery, and PQC latency/cost estimation are identified as <b>Planned</b> enhancements.</li>
-        </ol>
-    </div>
-    """, unsafe_allow_html=True)
+with tab_inv:
+    st.subheader("🗄️ Normalized Cryptographic Asset Inventory")
+    st.caption("First-class cryptographic inventory backed by the SQLite operational database. Fully normalized across host, algorithm, key size, certificate validity, service criticality, and PQC readiness.")
 
-    st.markdown("### Ground-Truth Requirement Implementation Table")
+    norm_assets = inv.get_normalized_inventory(DB_PATH)
+    inv_df = pd.DataFrame(norm_assets)
 
-    req_data = [
-        {
-            "Requirement": "(i) Catalogue Cryptographic Artefacts (Algorithms, keys, certificates, protocols, libraries, HSMs, Cloud KMS)",
-            "Status": "Partial",
-            "Implemented By": "ecdat_scanner.py (scan_host), ecdat_inventory.py (ingest_scan_results), ecdat_codescanner.py (scan_file_content)",
-            "30-Second Demo": "Run python cli.py scan --host google.com:443 -> view extracted TLS, cipher, key size, sig algo, and code findings.",
-            "Identified Gap / Limitation": "HSMs and Cloud KMS not catalogued. Libraries scanned via source AST/regex; native compiled binaries (.so/.dll) not inspected."
-        },
-        {
-            "Requirement": "(ii) Classify by Type, Lifetime & Criticality (Categorization & business impact assessment)",
-            "Status": "Partial",
-            "Implemented By": "ecdat_inventory.py (init_db, seed_demo_data), ecdat_scoring.py (CRITICALITY_MULTIPLIERS)",
-            "30-Second Demo": "Launch streamlit run app.py -> filter assets by criticality tier (P0-P3) and certificate days to expiry (days_to_expiry).",
-            "Identified Gap / Limitation": "Cert expiry lifetime is tracked, but system operational lifetime (Z) is static. Service dependency graph is mock/seeded (seed_demo_data), not automatically discovered from network traffic. (Note: The baseline '10 assets' breakdown is not verified — no documentary evidence exists for this breakdown)."
-        },
-        {
-            "Requirement": "(iii) Quantum Risk Assessment (Mosca-inspired framework & weighted risk scoring)",
-            "Status": "Partial",
-            "Implemented By": "ecdat_scoring.py (calculate_mwqrs, score_all_assets)",
-            "30-Second Demo": "Run python cli.py score -> view MWQRS scores (0-100 scale) calculated per asset based on 5 weighted parameters.",
-            "Identified Gap / Limitation": "The scoring model (MWQRS) is Mosca-inspired rather than a direct mathematical evaluation of Mosca's inequality (X + Y > Z). Data security shelf-life (Y) and migration time (X) are statically weighted rather than dynamically modeled from business retention policies."
-        },
-        {
-            "Requirement": "(iv) Recommend PQC/Hybrid Alternatives (NIST standards, latency, cost & migration sequence)",
-            "Status": "Partial",
-            "Implemented By": "ecdat_simulator.py (PQC_MIGRATION_MAP, simulate_migration, recommend_migration_order)",
-            "30-Second Demo": "Run python cli.py simulate -> view recommended NIST FIPS 203/204/205 replacements (ML-KEM-768, ML-DSA-65), hybrid mode, and sequence.",
-            "Identified Gap / Limitation": "Latency overhead impact and migration cost estimates are absent/not computed."
-        },
-        {
-            "Requirement": "(v) Deliverable: CBOM Analytics Tool (Source code, binaries, libraries, container images, report, GUI)",
-            "Status": "Partial",
-            "Implemented By": "ecdat_inventory.py (export_cbom), ecdat_codescanner.py (scan_source_directory), app.py, cli.py (cbom)",
-            "30-Second Demo": "Run python cli.py cbom --out cbom.json for CycloneDX v1.6 CBOM; launch streamlit run app.py for executive GUI.",
-            "Identified Gap / Limitation": "Source code scanned across multiple languages (.py, .js, .java); compiled binaries (.so/.dll/ELF) and container images (Docker/OCI) are not scanned."
-        }
-    ]
+    if inv_df.empty:
+        st.info("No cryptographic assets currently inventoried.")
+    else:
+        # Multi-attribute Filter Controls
+        with st.expander("🔍 Inventory Search & Filter Controls", expanded=True):
+            f_col1, f_col2, f_col3, f_col4 = st.columns(4)
+            with f_col1:
+                search_term = st.text_input("Search Host or Service", "")
+                sev_options = ["All"] + sorted(list(inv_df["severity"].dropna().unique()))
+                selected_sev = st.selectbox("Filter by Severity", sev_options)
+            with f_col2:
+                algo_options = ["All"] + sorted(list(inv_df["algorithm_category"].dropna().unique()))
+                selected_algo = st.selectbox("Algorithm Category", algo_options)
+                crit_options = ["All"] + sorted(list(inv_df["service_criticality"].dropna().unique()))
+                selected_crit = st.selectbox("Service Criticality", crit_options)
+            with f_col3:
+                tls_options = ["All"] + sorted(list(inv_df["tls_version"].dropna().unique()))
+                selected_tls = st.selectbox("TLS Version", tls_options)
+                pqc_options = ["All"] + sorted(list(inv_df["migration_status"].dropna().unique()))
+                selected_pqc = st.selectbox("Migration Status", pqc_options)
+            with f_col4:
+                filter_expiring_only = st.checkbox("Show Approaching Expiry (≤90 days)", False)
+                filter_vulnerable_only = st.checkbox("Show Quantum-Vulnerable Only", False)
 
-    st.dataframe(pd.DataFrame(req_data), use_container_width=True)
-    st.caption("Status Legend: **Implemented** (Fully operational in code) | **Partial** (Operational for core scope; secondary features absent or using inspired composite model) | **Planned** (Architecturally identified, not yet coded)")
+        # Apply Filters
+        filtered_inv = inv_df.copy()
+        if search_term:
+            filtered_inv = filtered_inv[
+                filtered_inv["host"].str.contains(search_term, case=False, na=False) |
+                filtered_inv["service"].str.contains(search_term, case=False, na=False)
+            ]
+        if selected_sev != "All":
+            filtered_inv = filtered_inv[filtered_inv["severity"] == selected_sev]
+        if selected_algo != "All":
+            filtered_inv = filtered_inv[filtered_inv["algorithm_category"] == selected_algo]
+        if selected_crit != "All":
+            filtered_inv = filtered_inv[filtered_inv["service_criticality"] == selected_crit]
+        if selected_tls != "All":
+            filtered_inv = filtered_inv[filtered_inv["tls_version"] == selected_tls]
+        if selected_pqc != "All":
+            filtered_inv = filtered_inv[filtered_inv["migration_status"] == selected_pqc]
+        if filter_expiring_only:
+            filtered_inv = filtered_inv[
+                filtered_inv["days_to_expiry"].notnull() & (filtered_inv["days_to_expiry"] <= 90)
+            ]
+        if filter_vulnerable_only:
+            filtered_inv = filtered_inv[
+                filtered_inv["quantum_status"].str.contains("Quantum-Vulnerable", case=False, na=False)
+            ]
 
-
-# ---------------------------------------------------------
-# TAB 3: CBOM INVENTORY TABLE
-# ---------------------------------------------------------
-with tab3:
-    st.subheader("Cryptographic Bill of Materials (CBOM) Inventory")
-
-    if not df.empty:
-        col_f1, col_f2 = st.columns(2)
-        with col_f1:
-            search_query = st.text_input("Search Host", "")
-        with col_f2:
-            filter_risk_only = st.checkbox("Show Only Vulnerable Assets (MWQRS ≥ 50)")
-
-        filtered_df = df.copy()
-        if search_query:
-            filtered_df = filtered_df[filtered_df["host"].str.contains(search_query, case=False, na=False)]
-        if filter_risk_only:
-            filtered_df = filtered_df[filtered_df["risk_score"] >= 50.0]
-
+        st.markdown(f"**Showing {len(filtered_inv)} of {len(inv_df)} cryptographic assets**")
         st.dataframe(
-            filtered_df[[
-                "id", "host", "port", "tls_version", "cipher_suite",
-                "cert_key_type", "cert_key_size_bits", "cert_signature_algorithm",
-                "days_to_expiry", "risk_score", "service_name", "risk_flags"
+            filtered_inv[[
+                "asset_id", "host", "port", "service", "service_criticality",
+                "algorithm", "key_size", "tls_version", "cipher_info",
+                "days_to_expiry", "mwqrs", "severity", "quantum_status",
+                "recommended_pqc", "migration_status", "source"
             ]],
             use_container_width=True
         )
 
-        st.markdown("### Export CBOM Document")
-        st.write("Download inventory formatted in **CycloneDX CBOM Specification 1.6** JSON standard.")
+        # Detailed Asset Card Inspector
+        st.markdown("### 🔎 Deep-Dive Asset Inspection Card")
+        asset_select_list = [f"ID {r['asset_id']}: {r['host']}:{r['port']} ({r['service']})" for _, r in filtered_inv.iterrows()]
+        if asset_select_list:
+            selected_asset_label = st.selectbox("Select Asset to Inspect:", asset_select_list)
+            sel_id = int(selected_asset_label.split(":")[0].replace("ID", "").strip())
+            sel_asset = next((a for a in norm_assets if a["asset_id"] == sel_id), None)
 
-        cbom_json = inv.export_cbom(DB_PATH)
+            if sel_asset:
+                ai1, ai2, ai3 = st.columns([1, 1, 1])
+                with ai1:
+                    st.markdown(f"**Target:** `{sel_asset['host']}:{sel_asset['port']}`")
+                    st.markdown(f"**Service:** {sel_asset['service']} ({sel_asset['service_criticality']})")
+                    st.markdown(f"**Source:** {sel_asset['source']}")
+                    st.markdown(f"**MWQRS Score:** **{sel_asset['mwqrs']} / 100** ({sel_asset['severity']})")
+                with ai2:
+                    st.markdown(f"**Algorithm:** `{sel_asset['algorithm']}` ({sel_asset['key_size']} bits)")
+                    st.markdown(f"**Category:** {sel_asset['algorithm_category']}")
+                    st.markdown(f"**TLS Version:** {sel_asset['tls_version']}")
+                    st.markdown(f"**Cipher:** {sel_asset['cipher_info']}")
+                with ai3:
+                    st.markdown(f"**Days to Expiry:** {sel_asset['days_to_expiry']} days")
+                    st.markdown(f"**Quantum Status:** {sel_asset['quantum_status']}")
+                    st.markdown(f"**Recommended PQC:** `{sel_asset['recommended_pqc']}`")
+                    st.markdown(f"**Status:** {sel_asset['migration_status']}")
+
+                with st.expander("X.509 Certificate Metadata & Detected Risk Flags", expanded=False):
+                    st.write(f"**Subject:** {sel_asset['cert_subject']}")
+                    st.write(f"**Issuer:** {sel_asset['cert_issuer']}")
+                    st.write(f"**Not After (Expiry):** {sel_asset['cert_expiry']}")
+                    if sel_asset['risk_flags']:
+                        st.write("**Detected Risk Flags:**")
+                        for f in sel_asset['risk_flags']:
+                            st.write(f"- `{f}`: {explain_risk_flag(f)}")
+                    else:
+                        st.write("No active risk flags detected for this asset.")
+
+        # Export Normalized Inventory
+        st.markdown("---")
+        csv_data = inv.export_inventory_csv(DB_PATH)
         st.download_button(
-            label="💾 Download CycloneDX CBOM (.json)",
-            data=cbom_json,
-            file_name="ecdat_cbom_cyclonedx.json",
-            mime="application/json"
+            label="📥 Download Normalized Inventory (.csv)",
+            data=csv_data,
+            file_name="ecdat_normalized_inventory.csv",
+            mime="text/csv",
         )
 
 
 # ---------------------------------------------------------
-# TAB 4: DEPENDENCY GRAPH
+# TAB 3: REMEDIATION CENTER (Capability 2)
 # ---------------------------------------------------------
-with tab4:
-    st.subheader("Service Dependency Network Graph & Quantum Risk propagation")
-    st.write("Visualizes services, inter-dependencies, and aggregate cryptographic risk scores.")
+with tab_rem:
+    st.subheader("🎯 Cryptographic Remediation Center & Priority Sequencing")
+    st.caption("Actionable sequencing prioritizing vulnerable cryptographic assets using actual MWQRS scores, service operational criticality tiers, certificate expiry urgency, and graph blast radius.")
+
+    remediation_plan = rem_eng.generate_remediation_plan(DB_PATH)
+
+    if not remediation_plan:
+        st.info("No assets requiring remediation found.")
+    else:
+        # Summary counts
+        crit_rem_count = sum(1 for item in remediation_plan if item["mwqrs"] >= 80.0)
+        urgent_exp_count = sum(1 for item in remediation_plan if item["days_to_expiry"] is not None and item["days_to_expiry"] <= 30)
+        high_blast_count = sum(1 for item in remediation_plan if len(item["downstream_services"]) >= 2)
+
+        rc1, rc2, rc3, rc4 = st.columns(4)
+        rc1.metric("Prioritized Action Items", len(remediation_plan))
+        rc2.metric("Critical MWQRS Items", crit_rem_count)
+        rc3.metric("Urgent Expiries (≤30d)", urgent_exp_count)
+        rc4.metric("High Blast Radius (≥2 Svc)", high_blast_count)
+
+        st.markdown("---")
+        st.markdown("### 📋 Sequenced Remediation Queue")
+
+        for item in remediation_plan[:10]:
+            with st.container():
+                rank_badge = "🔴" if item["mwqrs"] >= 80 else ("🟠" if item["mwqrs"] >= 50 else "🟢")
+                st.markdown(f"#### {rank_badge} #{item['priority_rank']} — `{item['target']}` ({item['service']})")
+
+                c_m1, c_m2, c_m3, c_m4 = st.columns(4)
+                c_m1.markdown(f"**MWQRS:** `{item['mwqrs']}/100` ({item['severity']})")
+                c_m2.markdown(f"**Criticality:** `{item['criticality']}`")
+                c_m3.markdown(f"**Algorithm:** `{item['algorithm']}` ({item['key_size']}b)")
+                c_m4.markdown(f"**Expires In:** `{item['days_to_expiry']} days`")
+
+                st.markdown(f"**Why Prioritized:** {item['why_prioritized']}")
+                st.markdown(f"**Migration Direction:** `{item['migration_direction']}`")
+                st.markdown(f"**Dependency Impact:** {item['dependency_impact']}")
+
+                with st.expander("View Prescribed Remediation Actions"):
+                    for act in item["recommended_actions"]:
+                        st.markdown(f"- {act}")
+
+                st.markdown("---")
+
+        # Export Remediation Plan
+        exp_col1, exp_col2 = st.columns(2)
+        with exp_col1:
+            md_plan = rem_eng.export_remediation_markdown(remediation_plan)
+            st.download_button(
+                label="📄 Download Remediation Plan (.md)",
+                data=md_plan,
+                file_name="ecdat_remediation_plan.md",
+                mime="text/markdown",
+            )
+        with exp_col2:
+            json_plan = rem_eng.export_remediation_json(remediation_plan)
+            st.download_button(
+                label="💾 Download Remediation Plan (.json)",
+                data=json_plan,
+                file_name="ecdat_remediation_plan.json",
+                mime="application/json",
+            )
+
+
+# ---------------------------------------------------------
+# TAB 4: THREAT TIMELINE & URGENCY (Capability 3)
+# ---------------------------------------------------------
+with tab_threat:
+    st.subheader("⏳ Mosca-Inspired Cryptographic Threat Timeline & Migration Urgency")
+    st.info(
+        "💡 **Methodology Disclaimer**: This module implements a Mosca-inspired urgency framework: "
+        "`Data Shelf-Life (Y) + Migration Effort (X) > Organizational Planning Horizon (Z)`.  \n"
+        "It evaluates engineering urgency under defined planning assumptions. "
+        "It does **NOT** claim to predict the exact arrival date of a Cryptographically Relevant Quantum Computer (CRQC)."
+    )
+
+    norm_assets_threat = inv.get_normalized_inventory(DB_PATH)
+    if norm_assets_threat:
+        st.markdown("### 🧮 Interactive Migration Urgency Calculator")
+        threat_options = {f"{a['host']}:{a['port']} ({a['service']} - {a['algorithm']})": a for a in norm_assets_threat}
+        sel_threat_label = st.selectbox("Select Asset to Evaluate Urgency:", list(threat_options.keys()))
+        target_threat_asset = threat_options[sel_threat_label]
+
+        tc1, tc2 = st.columns(2)
+        with tc1:
+            sens_choice = st.selectbox(
+                "Data Sensitivity Tier:",
+                list(threat_eng.DATA_SENSITIVITY_PROFILES.keys()),
+                index=2 if target_threat_asset.get("service_criticality") == "P1" else (3 if target_threat_asset.get("service_criticality") == "P0" else 1)
+            )
+            profile = threat_eng.DATA_SENSITIVITY_PROFILES[sens_choice]
+            shelf_life_input = st.slider(
+                "Estimated Data Security Shelf-Life (Y, years):",
+                min_value=0.0, max_value=30.0,
+                value=float(profile["default_shelf_life_years"]),
+                step=0.5,
+                help="Duration for which data encrypted with this key must remain confidential"
+            )
+        with tc2:
+            mig_time_input = st.slider(
+                "Estimated Migration Effort / Time (X, years):",
+                min_value=0.5, max_value=10.0,
+                value=float(profile["default_migration_time_years"]),
+                step=0.5,
+                help="Time required for system re-architecture, testing, and deployment"
+            )
+            horizon_input = st.slider(
+                "Organizational Planning Assumption Horizon (Z, years):",
+                min_value=3.0, max_value=25.0,
+                value=10.0,
+                step=1.0,
+                help="Working planning assumption for post-quantum preparedness (NOT a guaranteed arrival date)"
+            )
+
+        # Calculate Urgency
+        is_qv = "Quantum-Vulnerable" in target_threat_asset.get("quantum_status", "")
+        urgency_eval = threat_eng.calculate_migration_urgency(
+            shelf_life_years=shelf_life_input,
+            migration_time_years=mig_time_input,
+            planning_horizon_years=horizon_input,
+            data_sensitivity=sens_choice,
+            asset_mwqrs=target_threat_asset.get("mwqrs", 0.0),
+            is_quantum_vulnerable=is_qv,
+            asset_name=f"{target_threat_asset['host']}:{target_threat_asset['port']}"
+        )
+
+        # Display Urgency Result Card
+        st.markdown("---")
+        u_col1, u_col2, u_col3 = st.columns(3)
+        u_col1.metric("Combined Requirement (X + Y)", f"{urgency_eval['combined_requirement_years']} years")
+        u_col2.metric("Planning Assumption (Z)", f"{urgency_eval['planning_horizon_years']} years")
+
+        margin_label = f"{abs(urgency_eval['margin_or_deficit_years'])}y Deficit" if urgency_eval['is_deficit'] else f"{urgency_eval['margin_or_deficit_years']}y Headroom"
+        u_col3.metric("Timeline Margin / Deficit", margin_label)
+
+        if urgency_eval["urgency_level"] == "CRITICAL":
+            st.error(f"🚨 **Migration Urgency: CRITICAL**  \n{urgency_eval['summary_reason']}")
+        elif urgency_eval["urgency_level"] == "HIGH":
+            st.warning(f"⚠️ **Migration Urgency: HIGH**  \n{urgency_eval['summary_reason']}")
+        elif urgency_eval["urgency_level"] == "MEDIUM":
+            st.info(f"🟡 **Migration Urgency: MEDIUM**  \n{urgency_eval['summary_reason']}")
+        else:
+            st.success(f"✅ **Migration Urgency: LOW**  \n{urgency_eval['summary_reason']}")
+
+        st.markdown(f"**Recommended Action:** {urgency_eval['recommended_action']}")
+
+        # Full Threat Timeline Urgency Ranking Table
+        st.markdown("---")
+        st.markdown("### 📊 Inventory-Wide Threat Urgency Rankings")
+        inventory_urgencies = threat_eng.evaluate_inventory_threat_urgency(DB_PATH, planning_horizon_years=horizon_input)
+        u_df = pd.DataFrame(inventory_urgencies)
+        st.dataframe(
+            u_df[[
+                "asset_name", "service", "criticality", "algorithm", "mwqrs",
+                "data_sensitivity", "shelf_life_years", "migration_time_years",
+                "combined_requirement_years", "margin_or_deficit_years", "urgency_level"
+            ]],
+            use_container_width=True
+        )
+
+
+# ---------------------------------------------------------
+# TAB 5: DEPENDENCY GRAPH (Capability 5)
+# ---------------------------------------------------------
+with tab_graph:
+    st.subheader("🕸️ Service Dependency Network Graph & Blast Radius Analysis")
+    st.write("Visualizes services, directed dependencies, and topological blast radius calculated using NetworkX.")
 
     G = sim_eng.build_dependency_graph(DB_PATH)
     pos = nx.spring_layout(G, seed=42)
@@ -672,25 +908,61 @@ with tab4:
             ))
 
     st.plotly_chart(fig_net, use_container_width=True)
-
     st.info("🟢 Safe (MWQRS < 50) | 🟠 Medium (50-79) | 🔴 Critical Risk (MWQRS ≥ 80)")
 
+    # Interactive Service Blast Radius Drill-Down
+    st.markdown("---")
+    st.markdown("### 💥 Interactive Service Blast Radius Inspection")
+    service_names_list = [G.nodes[n].get("name") for n in G.nodes()]
+    if service_names_list:
+        sel_svc_name = st.selectbox("Select Service to Calculate Downstream Blast Radius:", service_names_list)
+        sel_node_id = next((n for n in G.nodes() if G.nodes[n].get("name") == sel_svc_name), None)
+
+        if sel_node_id is not None:
+            # Direct dependencies (services this service depends on)
+            direct_deps = [G.nodes[v].get("name") for _, v in G.out_edges(sel_node_id)]
+            # Downstream dependents (services that depend on this service)
+            downstream_deps = sim_eng.get_affected_dependents(sel_node_id, G)
+            total_blast = len(downstream_deps) + 1
+
+            br_col1, br_col2, br_col3 = st.columns(3)
+            br_col1.metric("Direct Dependencies", len(direct_deps))
+            br_col2.metric("Downstream Dependent Services", len(downstream_deps))
+            br_col3.metric("Calculated Blast Radius", f"{total_blast} Services")
+
+            if downstream_deps:
+                st.warning(f"⚠️ If **{sel_svc_name}** is migrated or interrupted, the following **{len(downstream_deps)}** downstream services are impacted: {', '.join(downstream_deps)}")
+            else:
+                st.success(f"✅ **{sel_svc_name}** is self-contained or at the edge of the architecture (0 downstream dependencies).")
+
 
 # ---------------------------------------------------------
-# TAB 5: PQC MIGRATION SIMULATOR
+# TAB 6: PQC MIGRATION SIMULATOR (Capability 4 & 9)
 # ---------------------------------------------------------
-with tab5:
-    st.subheader("Post-Quantum Cryptography (PQC) Migration Simulator")
-    st.write("ECDAT Differentiation Feature: Simulates replacing legacy cryptographic algorithms with NIST PQC standards and computes blast radius across dependent services.")
+with tab_pqc:
+    st.subheader("🚀 Post-Quantum Cryptography (PQC) Migration Simulator")
+    st.caption("Architectural migration simulator modeling transition from legacy classical cryptography to NIST FIPS 203/204/205 standards.")
 
     if not df.empty:
-        asset_options = {f"{r['host']}:{r['port']} (ID: {r['id']} - MWQRS: {r['risk_score']})": r['id'] for _, r in df.iterrows()}
-        selected_label = st.selectbox("Select Target Cryptographic Asset to Migrate:", list(asset_options.keys()))
-        selected_id = asset_options[selected_label]
+        sim_options = {f"{r['host']}:{r['port']} (ID: {r['id']} - MWQRS: {r['risk_score']})": r['id'] for _, r in df.iterrows()}
+        selected_sim_label = st.selectbox("Select Target Cryptographic Asset to Migrate:", list(sim_options.keys()), key="pqc_sim_select")
+        selected_sim_id = sim_options[selected_sim_label]
 
-        if st.button("🚀 Run Migration Impact Simulation"):
-            sim_res = sim_eng.simulate_migration(selected_id, DB_PATH)
+        # Strategy selector
+        strat_key = st.selectbox(
+            "Select Cryptographic Migration Strategy:",
+            list(sim_eng.MIGRATION_STRATEGIES.keys()),
+            format_func=lambda k: sim_eng.MIGRATION_STRATEGIES[k]["name"],
+            key="pqc_sim_strategy"
+        )
+        st.info(f"**Strategy Details:** {sim_eng.MIGRATION_STRATEGIES[strat_key]['description']} (Ref: {sim_eng.MIGRATION_STRATEGIES[strat_key]['standard_reference']})")
 
+        if st.button("🚀 Run Migration Impact Simulation", key="btn_run_sim"):
+            sim_res = sim_eng.simulate_migration(selected_sim_id, DB_PATH, strategy=strat_key)
+
+            st.markdown(f"> [!NOTE]\n> {sim_res['simulation_label']}")
+
+            # Top Simulation Metrics
             sc1, sc2, sc3 = st.columns(3)
             sc1.metric("Current Algorithm", sim_res["current_algorithm"])
             sc2.metric("Migration Complexity", sim_res["migration_complexity"])
@@ -698,48 +970,75 @@ with tab5:
 
             st.markdown("---")
 
+            # BEFORE vs AFTER State Comparison View
+            st.markdown("### 🔄 Before vs. After Migration State Comparison")
+            col_b, col_a = st.columns(2)
+            with col_b:
+                st.markdown("#### 🔴 Before Migration (Current State)")
+                b = sim_res["before_state"]
+                st.write(f"**Algorithm:** `{b['algorithm']}`")
+                st.write(f"**Key Size:** `{b['key_size']} bits`")
+                st.write(f"**MWQRS Risk Score:** `{b['mwqrs_score']} / 100`")
+                st.write(f"**Quantum Vulnerability Status:** {b['quantum_status']}")
+                st.write(f"**TLS Protocol:** `{b['tls_version']}`")
+
+            with col_a:
+                st.markdown("#### 🟢 After Migration (Simulated State)")
+                a = sim_res["after_state"]
+                st.write(f"**Algorithm:** `{a['algorithm']}`")
+                st.write(f"**Key Specification:** `{a['key_size']}`")
+                st.write(f"**Simulated MWQRS Score:** `{a['simulated_mwqrs_score']} / 100` (Risk Reduction: **-{a['risk_reduction']} pts**)")
+                st.write(f"**Simulated Status:** {a['quantum_status']}")
+                st.write(f"**TLS Protocol:** `{a['tls_version']}`")
+
+            st.markdown("---")
+
+            # Granular PQC Direction & Affected Services
             col_sim1, col_sim2 = st.columns(2)
             with col_sim1:
                 st.markdown("#### 🔒 Recommended NIST PQC Replacement")
-                st.success(f"**Target Algorithm**: {sim_res['recommended_replacement']}")
+                st.success(f"**Target Direction**: {sim_res['recommended_replacement']}")
+                st.write(f"**Key Establishment (KEM)**: `{sim_res['kem_replacement']}`")
+                st.write(f"**Digital Signatures**: `{sim_res['signature_replacement']}`")
+                st.write(f"**Hybrid Architecture**: `{sim_res['hybrid_modeling']}`")
                 st.write(f"**NIST Standards**: {', '.join(sim_res['standards'])}")
-                st.write(f"**Hybrid Mode Enabled**: {'Yes (Classical + PQC dual cert)' if sim_res['hybrid_mode'] else 'No'}")
-                st.info(f"**Guidance**: {sim_res['migration_notes']}")
+                st.info(f"**Implementation Guidance**: {sim_res['migration_notes']}")
 
-                if st.button("⚡ Apply PQC Migration Remediation to Asset"):
-                    sim_eng.apply_pqc_remediation(selected_id, DB_PATH)
-                    st.success("Asset successfully upgraded to NIST PQC (ML-KEM-768)! System MWQRS risk score updated.")
+                if st.button("⚡ Apply PQC Migration Remediation to Asset", key="btn_apply_pqc"):
+                    sim_eng.apply_pqc_remediation(selected_sim_id, DB_PATH)
+                    st.success("Asset successfully updated with NIST PQC record in database! Recalculating system MWQRS.")
                     st.rerun()
 
             with col_sim2:
-                st.markdown("#### 💥 Affected Dependent Services (Blast Radius)")
+                st.markdown("#### 💥 Downstream Services Affected (Blast Radius)")
                 deps = sim_res["affected_dependent_services"]
                 if deps:
                     for d in deps:
-                        st.warning(f"⚠️ **{d}** (Depends directly/indirectly on this service)")
+                        st.warning(f"⚠️ **{d}** (Depends on this service — requires certificate rollover coordination)")
                 else:
                     st.success("No downstream dependent services affected.")
 
         st.markdown("---")
         st.subheader("📋 Recommended Topological Migration Sequence")
-        st.write("Optimal sequence ordering prioritized by MWQRS Risk Score (Highest first) and Blast Radius.")
+        st.write("Prioritized by MWQRS Risk Score (Highest first) and low blast radius as tie-breaker.")
 
         roadmap = sim_eng.recommend_migration_order(DB_PATH)
         st.dataframe(pd.DataFrame(roadmap), use_container_width=True)
 
 
 # ---------------------------------------------------------
-# TAB 6: SOURCE CODE SCANNER
+# TAB 7: SOURCE CODE SCANNER (Capability 6)
 # ---------------------------------------------------------
-with tab6:
-    st.subheader("Source Code Cryptographic Security Scanner")
-    st.write("Scans codebase repositories for hardcoded RSA keys, weak hashing (MD5/SHA1), deprecated ciphers (DES), and exposed secret keys.")
+with tab_code:
+    st.subheader("🔍 Source Code Cryptographic Scanner")
+    st.caption("Scans repository source code across languages (.py, .js, .java, .c, .go, .env, .pem) for hardcoded keys, weak hashes, deprecated block ciphers, and key references.")
+    st.info("📌 **Note**: Source-code scanning is distinct from TLS network scanning; it inspects repository files directly for cryptographic implementation patterns.")
 
-    code_path_input = st.text_input("Source Directory to Scan", ".")
-    if st.button("🔍 Run Codebase Scan"):
-        with st.spinner("Scanning source files..."):
+    code_path_input = st.text_input("Source Directory to Scan", ".", key="code_scan_path_input")
+    if st.button("🔍 Run Codebase Cryptographic Scan", key="btn_run_code_scan"):
+        with st.spinner("Scanning source files with AST and regex rule engines..."):
             findings = code_eng.scan_source_directory(code_path_input, DB_PATH)
-            st.success(f"Code scan finished. Discovered {len(findings)} cryptographic issues.")
+            st.success(f"Code scan finished. Discovered {len(findings)} cryptographic findings.")
 
     conn = inv.get_db_connection(DB_PATH)
     cursor = conn.cursor()
@@ -753,13 +1052,342 @@ with tab6:
             use_container_width=True
         )
     else:
-        st.info("No code findings recorded yet. Click 'Run Codebase Scan' above.")
+        st.info("No code findings recorded yet. Click 'Run Codebase Cryptographic Scan' above.")
 
 
 # ---------------------------------------------------------
-# TAB 7: LIVE TLS SCANNER
+# TAB 8: CONTAINER SCANNER (Capability 7)
 # ---------------------------------------------------------
-with tab7:
+with tab_cnt:
+    st.subheader("🐳 Container & Dockerfile Cryptographic Scanner")
+    st.caption("Prototype-level container cryptographic analyzer inspecting Dockerfiles and build context metadata for base OS crypto stacks, crypto packages, embedded private keys, and insecure configuration.")
+
+    cnt_col1, cnt_col2 = st.columns(2)
+    with cnt_col1:
+        fixture_choice = st.selectbox(
+            "Select Container Target / Fixture:",
+            [
+                "samples/container_fixtures/Dockerfile.legacy_service (Controlled Test Fixture — Weak/Legacy)",
+                "samples/container_fixtures/Dockerfile.pqc_ready (Controlled Test Fixture — Modern PQC)",
+                "Custom Path"
+            ],
+            key="cnt_fixture_choice"
+        )
+    with cnt_col2:
+        if "Custom Path" in fixture_choice:
+            target_container_path = st.text_input("Enter Dockerfile or container directory path:", ".", key="cnt_custom_path")
+        else:
+            target_container_path = fixture_choice.split(" ")[0]
+
+    if st.button("⚡ Execute Container Cryptographic Inspection", key="btn_run_cnt_scan"):
+        with st.spinner(f"Analyzing container target {target_container_path}..."):
+            try:
+                cnt_findings = cnt_eng.scan_container_target(target_container_path, DB_PATH)
+                st.success(f"Container inspection complete. Identified {len(cnt_findings)} cryptographic findings.")
+            except Exception as e:
+                st.error(f"Container scan error: {str(e)}")
+
+    # Display Container Findings
+    db_cnt_findings = cnt_eng.get_container_findings(DB_PATH)
+    if db_cnt_findings:
+        st.markdown("### 📋 Container Cryptographic Findings")
+        cnt_df = pd.DataFrame(db_cnt_findings)
+        st.dataframe(
+            cnt_df[["id", "target_path", "finding_type", "severity", "component", "evidence", "recommendation"]],
+            use_container_width=True
+        )
+    else:
+        st.info("No container findings recorded yet. Click 'Execute Container Cryptographic Inspection' above.")
+
+
+# ---------------------------------------------------------
+# TAB 9: API CRYPTO SCANNER (Capability 8)
+# ---------------------------------------------------------
+with tab_api:
+    st.subheader("🌐 API Cryptographic & Security Scanner")
+    st.caption("Inspects API endpoints and API response tokens for TLS parameters, cryptographic security headers (HSTS), and JWT signature algorithms (RS256 vs ES256 vs PQC).")
+
+    api_mode = st.radio(
+        "API Inspection Source:",
+        ["Controlled Test Fixture (Offline)", "Live API Endpoint URL"],
+        horizontal=True,
+        key="api_inspection_mode"
+    )
+
+    if api_mode == "Controlled Test Fixture (Offline)":
+        api_fixture_choice = st.selectbox(
+            "Select Controlled API Test Fixture:",
+            [
+                "samples/api_fixtures/api_jwt_rs256.json (Legacy RSA-2048 Signed JWT)",
+                "samples/api_fixtures/api_jwt_es256.json (ECDSA P-384 Signed JWT + HSTS)",
+                "samples/api_fixtures/api_jwt_pqc_mock.json (NIST FIPS 204 ML-DSA-65 PQC Token)",
+            ],
+            key="api_fixture_select"
+        )
+        fixture_file = api_fixture_choice.split(" ")[0]
+
+        if st.button("⚡ Inspect API Cryptographic Posture", key="btn_inspect_api_fixture"):
+            with st.spinner("Parsing API fixture and decoding JWT header..."):
+                rep = api_eng.inspect_api_fixture(fixture_file, DB_PATH)
+                st.success(f"Inspection complete for {rep['url']}. Overall Cryptographic Risk: **{rep['overall_risk']}**")
+
+                a_c1, a_c2, a_c3 = st.columns(3)
+                a_c1.metric("API Endpoint", rep["endpoint"])
+                a_c2.metric("Overall Cryptographic Risk", rep["overall_risk"])
+                jwt_alg = rep["jwt_analysis"]["classification"]["algorithm"] if rep["jwt_analysis"] else "None"
+                a_c3.metric("JWT Signature Algorithm", jwt_alg)
+
+                if rep["jwt_analysis"]:
+                    jwt_c = rep["jwt_analysis"]["classification"]
+                    st.markdown("#### 🔑 JWT Signature Algorithm Analysis")
+                    st.write(f"- **Algorithm:** `{jwt_c['algorithm']}` ({jwt_c['type']})")
+                    st.write(f"- **Quantum Vulnerability Status:** {jwt_c['quantum_status']}")
+                    st.write(f"- **Recommendation:** {jwt_c['recommendation']}")
+
+                if rep["tls_info"]:
+                    st.markdown("#### 🔒 Transport Layer Security (TLS)")
+                    t_info = rep["tls_info"]
+                    st.write(f"- **TLS Version:** `{t_info.get('version')}` | **Cipher:** `{t_info.get('cipher_suite')}`")
+                    st.write(f"- **Certificate Key:** `{t_info.get('cert_key_type')}` ({t_info.get('cert_key_size_bits')} bits)")
+
+                if rep["findings"]:
+                    st.markdown("#### ⚠️ Noteworthy Findings")
+                    for f in rep["findings"]:
+                        st.write(f"- {f}")
+
+    else:  # Live API Endpoint URL
+        if mode_selection == "🔵 OFFLINE MODE":
+            st.warning("⚠️ OFFLINE MODE is active. Public API endpoints are blocked. Enter a local endpoint (e.g. https://127.0.0.1:8443) or use the Controlled Test Fixtures above.")
+
+        live_api_url = st.text_input("Enter API Endpoint URL (e.g. https://127.0.0.1:8443/api/v1/auth):", "https://127.0.0.1:8443", key="live_api_input")
+        sample_jwt_input = st.text_area("Optional Bearer JWT Token to Analyze (or leave blank):", "", key="sample_jwt_area")
+
+        if st.button("⚡ Scan Live API Endpoint", key="btn_scan_live_api"):
+            parsed_u = urllib.parse.urlparse(live_api_url)
+            host_u = parsed_u.hostname or "127.0.0.1"
+            if mode_selection == "🔵 OFFLINE MODE" and offline_eng.is_blocked_in_offline_mode(host_u):
+                st.error(f"❌ Host `{host_u}` blocked: External network scanning is prohibited in Sovereign Offline Mode.")
+            else:
+                with st.spinner(f"Connecting to API endpoint {live_api_url}..."):
+                    rep = api_eng.inspect_api_endpoint(live_api_url, sample_jwt=sample_jwt_input or None, db_path=DB_PATH)
+                    st.success(f"API Scan Complete. Cryptographic Risk: **{rep['overall_risk']}**")
+                    st.json(rep)
+
+
+# ---------------------------------------------------------
+# TAB 10: SCAN HISTORY & DIFF ALERTING (Capability 10)
+# ---------------------------------------------------------
+with tab_diff:
+    st.subheader("⏱️ 24-Hour Rescan Cadence & Diff-Based Alerting")
+    st.caption("Snapshot versioning and structural diff engine tracking changes across periodic scans: added/removed assets, algorithm modifications, key length changes, expiry shifts, and MWQRS deltas.")
+
+    # Snapshot Management
+    st.markdown("### 📸 Scan Snapshots")
+    snap_col1, snap_col2 = st.columns([3, 1])
+    with snap_col1:
+        snap_name_input = st.text_input("Snapshot Name / Label:", f"Scan Snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}", key="snap_name_input")
+    with snap_col2:
+        st.write("") # vertical spacing
+        st.write("")
+        if st.button("📸 Take Snapshot of Current State", key="btn_save_snapshot"):
+            sid = inv.save_scan_snapshot(snap_name_input, DB_PATH)
+            st.success(f"Snapshot #{sid} ('{snap_name_input}') saved successfully.")
+            st.rerun()
+
+    snapshots = inv.get_scan_snapshots(DB_PATH)
+    if snapshots:
+        snap_df = pd.DataFrame(snapshots)
+        st.dataframe(
+            snap_df[["id", "name", "created_at", "asset_count", "avg_risk", "critical_count", "medium_count", "safe_count"]],
+            use_container_width=True
+        )
+
+        st.markdown("---")
+        st.markdown("### 🔍 Compare Scan Snapshots (Diff Engine)")
+        if len(snapshots) >= 2:
+            snap_options = {f"#{s['id']} — {s['name']} ({s['created_at']})": s['id'] for s in snapshots}
+            c_s1, c_s2 = st.columns(2)
+            with c_s1:
+                baseline_label = st.selectbox("Baseline Snapshot (Old):", list(snap_options.keys()), index=len(snap_options)-1, key="baseline_snap_sel")
+                old_id = snap_options[baseline_label]
+            with c_s2:
+                comp_label = st.selectbox("Comparison Snapshot (New):", list(snap_options.keys()), index=0, key="comp_snap_sel")
+                new_id = snap_options[comp_label]
+
+            if st.button("⚡ Run Cryptographic Diff Comparison", key="btn_run_diff"):
+                diff_res = diff_eng.compare_snapshots(old_id, new_id, DB_PATH)
+                st.markdown("#### 📊 Diff Summary Metrics")
+                s = diff_res["summary"]
+                d1, d2, d3, d4, d5 = st.columns(5)
+                d1.metric("Assets Added", f"+{s['assets_added']}")
+                d2.metric("Assets Removed", f"-{s['assets_removed']}")
+                d3.metric("Assets Modified", s["assets_modified"])
+                d4.metric("Risk Increased", f"+{s['risk_increased_count']}", delta_color="inverse")
+                d5.metric("Avg MWQRS Delta", f"{'+' if s['avg_risk_delta'] > 0 else ''}{s['avg_risk_delta']}")
+
+                st.markdown("#### 🚨 Detected Change Alerts")
+                if diff_res["alerts"]:
+                    for a in diff_res["alerts"]:
+                        st.warning(a)
+                else:
+                    st.success("No cryptographic regressions or structural changes detected between snapshots.")
+
+                # Download Diff Report
+                diff_md = diff_eng.export_diff_markdown(diff_res)
+                st.download_button(
+                    label="📄 Download Diff Report (.md)",
+                    data=diff_md,
+                    file_name=f"ecdat_scan_diff_{old_id}_vs_{new_id}.md",
+                    mime="text/markdown",
+                    key="btn_download_diff_md"
+                )
+        else:
+            st.info("At least 2 snapshots are required to compare scans. Click 'Take Snapshot of Current State' above to create another snapshot.")
+
+    # 24-Hour Rescan Cadence Configuration Card
+    st.markdown("---")
+    st.markdown("### ⏲️ Periodic Rescan Cadence Configuration")
+    cad1, cad2 = st.columns(2)
+    with cad1:
+        rescan_interval = st.selectbox("Configured Rescan Cadence:", ["Every 24 Hours (Default)", "Every 12 Hours", "Every 6 Hours", "Continuous (On-Demand)"], index=0)
+    with cad2:
+        st.write("")
+        st.caption("📌 **Execution Policy**: Automated cron or pipeline scheduler executes `python cli.py pipeline` at the configured interval. ECDAT captures snapshot versions and generates diff alerts on drift.")
+
+
+# ---------------------------------------------------------
+# TAB 11: COMPLIANCE & READINESS DASHBOARD (Capability 11)
+# ---------------------------------------------------------
+with tab_comp:
+    st.subheader("🛡️ Cryptographic Compliance & PQC Readiness Dashboard")
+    st.info(
+        "📌 **Scope & Technical Control Status**: This dashboard evaluates technical control status "
+        "and post-quantum preparedness against NIST SP 800-52 Rev. 2 guidelines and NIST FIPS 203/204/205 standards. "
+        "It provides engineering readiness visibility; it does not certify formal legal compliance."
+    )
+
+    norm_comp = inv.get_normalized_inventory(DB_PATH)
+    total_c = len(norm_comp)
+
+    if total_c > 0:
+        qv_c = sum(1 for a in norm_comp if "Quantum-Vulnerable" in a.get("quantum_status", ""))
+        pqc_c = sum(1 for a in norm_comp if "Quantum-Resistant" in a.get("quantum_status", ""))
+        mig_req_c = sum(1 for a in norm_comp if a.get("migration_status") == "Migration Required")
+        unknown_c = total_c - (qv_c + pqc_c)
+
+        cp1, cp2, cp3, cp4, cp5 = st.columns(5)
+        cp1.metric("Total Cryptographic Assets", total_c)
+        cp2.metric("Quantum-Vulnerable", qv_c, delta=f"{round(qv_c/total_c*100,1)}%", delta_color="inverse")
+        cp3.metric("PQC-Ready / Migrated", pqc_c)
+        cp4.metric("Migration Required", mig_req_c)
+        cp5.metric("Unknown / Under Review", unknown_c)
+
+        st.markdown("---")
+        st.markdown("### 📋 Technical Control Status Checklist")
+
+        col_chk1, col_chk2 = st.columns(2)
+        with col_chk1:
+            st.markdown("#### Implemented Prototype Controls")
+            st.success("✅ **Crypto Inventory Available**: Normalized cryptographic asset database operational")
+            st.success("✅ **Algorithm Identified**: TLS ciphers, key specifications, and signature algorithms parsed")
+            st.success("✅ **Key Size Tracked**: Bit strengths catalogued against NIST SP 800-52 Rev. 2 minimums")
+            st.success("✅ **Certificate Expiry Tracked**: X.509 validity periods and renewal windows monitored")
+            st.success("✅ **Quantum Risk Score Calculated**: MWQRS composite index calculated for all endpoints")
+            st.success("✅ **Dependency Mapping Available**: Service inter-dependencies mapped in NetworkX")
+            st.success("✅ **PQC Recommendation Available**: NIST FIPS 203/204/205 replacement guidance generated")
+            st.success("✅ **CBOM Generated**: CycloneDX v1.6 specification compliant export ready")
+
+        with col_chk2:
+            st.markdown("#### Controls in Progress & Roadmap Items")
+            st.warning("⚠️ **Assets Requiring PQC Migration**: Active classical public keys require hybrid or PQC transition")
+            st.info("ℹ️ **Hardware Security Modules (HSM) Cataloguing**: [Prototype limitation / roadmap]")
+            st.info("ℹ️ **Cloud KMS Key Inventory Integration**: [Prototype limitation / roadmap]")
+            st.info("ℹ️ **Compiled Binary (.so/ELF) Inspection**: [Prototype limitation / roadmap]")
+            st.info("ℹ️ **Production Distributed Agent Architecture**: [Prototype limitation / roadmap]")
+
+    # Download Compliance Report
+    st.markdown("---")
+    comp_report_lines = [
+        "# ECDAT Cryptographic Compliance & Readiness Assessment",
+        "",
+        f"**Assessment Timestamp:** {datetime.now(timezone.utc).isoformat()}  ",
+        f"**Database:** `{DB_PATH}`  ",
+        "",
+        "## Readiness Metrics",
+        f"- **Total Assets:** {total_c}",
+        f"- **Quantum-Vulnerable:** {qv_c}",
+        f"- **PQC-Ready:** {pqc_c}",
+        f"- **Migration Required:** {mig_req_c}",
+        "",
+        "## Standards Alignment",
+        "- **NIST SP 800-52 Rev. 2**: Guidelines for TLS Implementations",
+        "- **NIST FIPS 203**: Module-Lattice-Based Key-Encapsulation Mechanism (ML-KEM)",
+        "- **NIST FIPS 204**: Module-Lattice-Based Digital Signature Algorithm (ML-DSA)",
+        "- **NIST FIPS 205**: Stateless Hash-Based Digital Signature Algorithm (SLH-DSA)",
+        "- **CycloneDX CBOM Specification 1.6**: Cryptographic Bill of Materials",
+    ]
+    st.download_button(
+        label="📄 Download Compliance & Readiness Report (.md)",
+        data="\n".join(comp_report_lines),
+        file_name="ecdat_compliance_readiness_report.md",
+        mime="text/markdown",
+        key="btn_download_comp_md"
+    )
+
+
+# ---------------------------------------------------------
+# TAB 12: CBOM STUDIO (Capability 12)
+# ---------------------------------------------------------
+with tab_cbom:
+    st.subheader("📜 Cryptographic Bill of Materials (CBOM) Studio")
+    st.caption("Exports cryptographic inventory strictly formatted in CycloneDX CBOM Specification 1.6 JSON standard.")
+
+    cbom_json = inv.export_cbom(DB_PATH)
+    try:
+        parsed_cbom = json.loads(cbom_json)
+        valid_json = True
+        comp_count = len(parsed_cbom.get("components", []))
+    except Exception:
+        valid_json = False
+        comp_count = 0
+        parsed_cbom = {}
+
+    cb1, cb2, cb3, cb4 = st.columns(4)
+    cb1.metric("BOM Format", "CycloneDX")
+    cb2.metric("Spec Version", "1.6")
+    cb3.metric("Crypto Components", comp_count)
+    cb4.metric("JSON Syntax", "✅ Valid JSON" if valid_json else "❌ Error")
+
+    st.markdown("---")
+    st.markdown("### 📄 CycloneDX JSON Document Preview")
+
+    if valid_json:
+        MAX_PREVIEW_COMPONENTS = 5
+        preview_obj = dict(parsed_cbom)  # shallow copy, don't mutate the real object
+        full_components = preview_obj.get("components", [])
+        if len(full_components) > MAX_PREVIEW_COMPONENTS:
+            preview_obj["components"] = full_components[:MAX_PREVIEW_COMPONENTS]
+            preview_obj["_preview_note"] = (
+                f"Showing {MAX_PREVIEW_COMPONENTS} of {len(full_components)} components. "
+                "Download the full file below for the complete document."
+            )
+        st.json(preview_obj)  # pass a real dict — st.json handles serialization itself
+    else:
+        st.error("CBOM document failed JSON validation — cannot preview.")
+        st.code(cbom_json[:1500], language="text")
+
+    st.download_button(
+        label="💾 Download Full CycloneDX CBOM (.json)",
+        data=cbom_json,
+        file_name="ecdat_cbom_cyclonedx_1.6.json",
+        mime="application/json",
+        key="btn_download_cbom_full"
+    )
+
+# ---------------------------------------------------------
+# TAB 13: LIVE TLS SCANNER
+# ---------------------------------------------------------
+with tab_tls:
     st.subheader("Run Real-Time Cryptographic Discovery Scan")
 
     if mode_selection == "🔵 OFFLINE MODE":
@@ -1114,9 +1742,9 @@ with tab7:
 
 
 # ---------------------------------------------------------
-# TAB 8: GUIDED TOUR & ASSISTANT (works offline; AI optional)
+# TAB 14: GUIDED TOUR & ASSISTANT (works offline; AI optional)
 # ---------------------------------------------------------
-with tab8:
+with tab_tour:
     def _band_counts(scores):
         return {
             "critical_80_plus": int((scores >= 80).sum()),

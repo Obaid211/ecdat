@@ -1,0 +1,20 @@
+{
+  "api_url": "https://legacy-portal.internal:8443/api/v1/auth/token",
+  "method": "POST",
+  "status_code": 200,
+  "description": "CONTROLLED TEST FIXTURE: Legacy Authentication API emitting RSA-signed JWT",
+  "tls_info": {
+    "version": "TLSv1.2",
+    "cipher_suite": "ECDHE-RSA-AES256-GCM-SHA384",
+    "cert_key_type": "RSA",
+    "cert_key_size_bits": 2048,
+    "cert_signature_algorithm": "sha256WithRSAEncryption",
+    "days_to_expiry": 45
+  },
+  "headers": {
+    "Content-Type": "application/json",
+    "Server": "nginx/1.18.0",
+    "X-Content-Type-Options": "nosniff"
+  },
+  "sample_jwt": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkxlZ2FjeSBDaXRpemVuIFNlcnZpY2UiLCJhZG1pbiI6dHJ1ZX0.signature_placeholder_123"
+}

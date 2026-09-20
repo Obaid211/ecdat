@@ -24,6 +24,11 @@ import ecdat_inventory as inv
 import ecdat_scoring as score_eng
 import ecdat_simulator as sim_eng
 import ecdat_codescanner as code_eng
+import ecdat_remediation as rem_eng
+import ecdat_threat_timeline as threat_eng
+import ecdat_containerscanner as cnt_eng
+import ecdat_apiscanner as api_eng
+import ecdat_diff as diff_eng
 
 
 def main():
@@ -64,6 +69,36 @@ def main():
     # Command: cbom
     cbom_p = subparsers.add_parser("cbom", help="Export CycloneDX 1.6 CBOM document")
     cbom_p.add_argument("--out", default="ecdat_cbom.json", help="Output path")
+
+    # Command: remediation
+    rem_p = subparsers.add_parser("remediation", help="Capability 2: Priority-Based Cryptographic Remediation Sequencing")
+    rem_p.add_argument("--limit", type=int, default=5, help="Number of items to display (default 5)")
+    rem_p.add_argument("--out", help="Optional output path (.md or .json)")
+
+    # Command: threat-timeline
+    threat_p = subparsers.add_parser("threat-timeline", help="Capability 3: Threat-Timeline & Mosca Urgency Evaluation")
+    threat_p.add_argument("--horizon", type=float, default=10.0, help="Planning horizon assumption in years (default 10.0)")
+    threat_p.add_argument("--limit", type=int, default=5, help="Number of items to display (default 5)")
+
+    # Command: scan-container
+    cnt_p = subparsers.add_parser("scan-container", help="Capability 7: Container & Dockerfile Cryptographic Scanner")
+    cnt_p.add_argument("--target", default="samples/container_fixtures/Dockerfile.legacy_service", help="Path to Dockerfile or container directory")
+
+    # Command: scan-api
+    api_p = subparsers.add_parser("scan-api", help="Capability 8: API Cryptographic Scanner")
+    api_p.add_argument("--url", help="Live API URL to inspect")
+    api_p.add_argument("--fixture", default="samples/api_fixtures/api_jwt_rs256.json", help="Path to controlled API fixture JSON")
+    api_p.add_argument("--jwt", help="Optional sample JWT token to analyze")
+
+    # Command: snapshot
+    snap_p = subparsers.add_parser("snapshot", help="Capability 10: Save current scan snapshot for diff tracking")
+    snap_p.add_argument("--name", default="Manual Scan Snapshot", help="Label for this snapshot")
+
+    # Command: diff
+    diff_p = subparsers.add_parser("diff", help="Capability 10: Compare two scan snapshots and generate diff alerts")
+    diff_p.add_argument("--old", type=int, required=True, help="Baseline snapshot ID")
+    diff_p.add_argument("--new", type=int, required=True, help="Comparison snapshot ID")
+    diff_p.add_argument("--out", help="Optional markdown report output path")
 
     args = parser.parse_args()
 
@@ -133,6 +168,18 @@ def main():
             f.write(cbom_content)
         print(f"-> CBOM document successfully written to {cbom_out}")
 
+        # Step 7: Record Scan Snapshot for 24-Hour Rescan Diff Tracking
+        snap_id = inv.save_scan_snapshot("Pipeline Automated Run")
+        print(f"\n[Capability 10 Diff Engine] Scan snapshot recorded: #{snap_id} ('Pipeline Automated Run')")
+
+        # Step 8: Priority Remediation Plan Preview
+        plan = rem_eng.generate_remediation_plan()
+        if plan:
+            top = plan[0]
+            print(f"\n[Capability 2 Remediation Center] #1 Priority Asset: {top['target']} ({top['service']})")
+            print(f"  -> Why Prioritized: {top['why_prioritized']}")
+            print(f"  -> Recommended Action: {top['recommended_actions'][0] if top['recommended_actions'] else 'Review'}")
+
         print("\n==========================================================================")
         print("  Pipeline Execution Complete! Launch Dashboard: streamlit run app.py")
         print("==========================================================================")
@@ -155,6 +202,8 @@ def main():
         with open(args.out, "w") as f:
             json.dump(results, f, indent=2, default=str)
         scanner_core.print_summary(results)
+        bench = scanner_core.calculate_scan_benchmark(results)
+        print(f"\n[Measured Performance Benchmark] {bench['successful']}/{bench['total_attempted']} successful | Avg: {bench['average_seconds']}s/host | Median: {bench['median_seconds']}s | Max: {bench['max_seconds']}s")
 
     elif args.command == "ingest":
         count = inv.ingest_scan_results(args.file)
@@ -181,6 +230,55 @@ def main():
         with open(args.out, "w", encoding="utf-8") as f:
             f.write(content)
         print(f"CycloneDX CBOM exported to {args.out}")
+
+    elif args.command == "remediation":
+        plan = rem_eng.generate_remediation_plan()
+        print(f"Generated remediation plan for {len(plan)} assets:")
+        for item in plan[:args.limit]:
+            print(f"#{item['priority_rank']} {item['target']} ({item['service']}) | MWQRS: {item['mwqrs']} | {item['why_prioritized']}")
+        if args.out:
+            if args.out.endswith(".json"):
+                Path(args.out).write_text(rem_eng.export_remediation_json(plan), encoding="utf-8")
+            else:
+                Path(args.out).write_text(rem_eng.export_remediation_markdown(plan), encoding="utf-8")
+            print(f"Remediation plan exported to {args.out}")
+
+    elif args.command == "threat-timeline":
+        res = threat_eng.evaluate_inventory_threat_urgency(planning_horizon_years=args.horizon)
+        print(f"Mosca-Inspired Threat Timeline Evaluations (Horizon: {args.horizon}y, Total: {len(res)}):")
+        for item in res[:args.limit]:
+            print(f"[{item['urgency_level']}] {item['asset_name']} | Requirement: {item['combined_requirement_years']}y | {item['summary_reason'][:80]}...")
+
+    elif args.command == "scan-container":
+        findings = cnt_eng.scan_container_target(args.target)
+        print(f"Container Scan of '{args.target}' Complete. Discovered {len(findings)} findings:")
+        for f in findings:
+            print(f" - [{f['severity']}] {f['finding_type']} -> {f['evidence'][:60]}")
+
+    elif args.command == "scan-api":
+        if args.url:
+            rep = api_eng.inspect_api_endpoint(args.url, sample_jwt=args.jwt)
+            print(f"API Scan of '{args.url}' Complete. Risk Level: {rep['overall_risk']}")
+            print(json.dumps(rep, indent=2))
+        else:
+            rep = api_eng.inspect_api_fixture(args.fixture)
+            print(f"API Fixture Scan of '{args.fixture}' Complete. Risk Level: {rep['overall_risk']}")
+            print(json.dumps(rep, indent=2))
+
+    elif args.command == "snapshot":
+        snap_id = inv.save_scan_snapshot(args.name)
+        print(f"Created scan snapshot #{snap_id} ('{args.name}').")
+
+    elif args.command == "diff":
+        d = diff_eng.compare_snapshots(args.old, args.new)
+        print("Diff Summary:")
+        print(json.dumps(d.get("summary", {}), indent=2))
+        print("\nAlerts:")
+        for a in d.get("alerts", []):
+            print(f"  * {a}")
+        if args.out:
+            Path(args.out).write_text(diff_eng.export_diff_markdown(d), encoding="utf-8")
+            print(f"\nDiff report written to {args.out}")
 
 
 if __name__ == "__main__":

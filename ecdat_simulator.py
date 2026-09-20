@@ -86,10 +86,32 @@ def get_affected_dependents(service_id: int, G: nx.DiGraph) -> list:
     return affected_names
 
 
-def simulate_migration(asset_id: int, db_path=DEFAULT_DB_PATH) -> dict:
+MIGRATION_STRATEGIES = {
+    "HYBRID": {
+        "name": "Hybrid Classical + PQC (Recommended Transition Mode)",
+        "description": "Deploys a composite or dual certificate combining classical cryptography (for backwards compatibility) with NIST PQC algorithms (for quantum resistance).",
+        "standard_reference": "NIST SP 800-227 / RFC 9370 / IETF draft-ietf-tls-hybrid-design",
+    },
+    "PURE_PQC": {
+        "name": "Pure Post-Quantum (FIPS 203 / FIPS 204)",
+        "description": "Full replacement of classical asymmetric algorithms with finalized NIST standards. Best for greenfield and high-security internal services.",
+        "standard_reference": "NIST FIPS 203 (ML-KEM), FIPS 204 (ML-DSA), FIPS 205 (SLH-DSA)",
+    },
+    "CLASSICAL_HARDENING": {
+        "name": "Classical Hardening (Interim Interim Step)",
+        "description": "Increases classical key lengths (e.g. RSA-1024 -> RSA-3072+) and upgrades to TLS 1.3 while planning full PQC transition.",
+        "standard_reference": "NIST SP 800-52 Rev. 2 (Classical Interim Baseline)",
+    }
+}
+
+
+def simulate_migration(asset_id: int, db_path=DEFAULT_DB_PATH, strategy: str = "HYBRID") -> dict:
     """
-    Simulates PQC migration for a given asset ID.
-    Returns recommendation details, affected components, complexity rating, and roadmap position.
+    Simulates PQC migration for a given asset ID under a chosen migration strategy.
+    Returns recommendation details, affected components, complexity rating,
+    and a clear BEFORE vs AFTER comparison state.
+
+    Labeled: Migration simulation model (does NOT claim to deploy live production crypto).
     """
     init_db(db_path)
     conn = get_db_connection(db_path)
@@ -107,14 +129,57 @@ def simulate_migration(asset_id: int, db_path=DEFAULT_DB_PATH) -> dict:
         return {"error": f"Asset ID {asset_id} not found."}
 
     asset_dict = dict(asset)
-    key_type = asset_dict.get("cert_key_type") or "RSA"
+    key_type = (asset_dict.get("cert_key_type") or "RSA").strip()
+    key_size = asset_dict.get("cert_key_size_bits") or "Unknown"
+    current_mwqrs = float(asset_dict.get("risk_score") or 0.0)
+    tls_v = asset_dict.get("tls_version") or "Unknown"
 
-    # Select PQC mapping
+    # Base PQC mapping (preserved for backward compatibility)
     pqc_info = PQC_MIGRATION_MAP.get("RSA")
     if "ECC" in key_type.upper():
         pqc_info = PQC_MIGRATION_MAP.get("ECC")
     elif "DSA" in key_type.upper():
         pqc_info = PQC_MIGRATION_MAP.get("DSA")
+
+    # Granular KEM vs Signature categorization per Capability 4 & 9
+    is_rsa = "RSA" in key_type.upper()
+    is_ecc = "ECC" in key_type.upper() or "ECDSA" in key_type.upper()
+
+    if is_rsa:
+        kem_direction = "NIST FIPS 203: ML-KEM-768 (Kyber)"
+        sig_direction = "NIST FIPS 204: ML-DSA-65 (Dilithium)"
+        hybrid_strategy = "Dual Classical RSA-3072 + ML-KEM-768 / ML-DSA-65"
+    elif is_ecc:
+        kem_direction = "Hybrid ECDH + NIST FIPS 203: ML-KEM-768"
+        sig_direction = "NIST FIPS 204: ML-DSA-65 or NIST FIPS 205: SLH-DSA-128s"
+        hybrid_strategy = "Hybrid ECDSA (P-384) + ML-DSA-65 (FIPS 204)"
+    else:
+        kem_direction = "NIST FIPS 203: ML-KEM-768"
+        sig_direction = "NIST FIPS 204: ML-DSA-65"
+        hybrid_strategy = "Classical + ML-KEM / ML-DSA Dual Stack"
+
+    strat_choice = strategy.upper()
+    if strat_choice == "PURE_PQC":
+        rec_replacement = f"Pure {kem_direction} (KEM) & {sig_direction} (Sig)"
+        sim_algo = "ML-KEM-768 / ML-DSA-65 (NIST FIPS 203/204)"
+        sim_key_size = "768-bit (KEM) / 1952-byte (Sig)"
+        sim_mwqrs = 10.0 if "P0" in (asset_dict.get("service_criticality") or "") else 5.0
+        sim_qv_status = "Quantum-Resistant (NIST PQC Final Standards)"
+        sim_notes = "Pure PQC transition eliminates classical vulnerability to Shor's algorithm. Requires modern TLS client support."
+    elif strat_choice == "CLASSICAL_HARDENING":
+        rec_replacement = "Hardened Classical RSA-3072 / ECC P-384 with TLS 1.3"
+        sim_algo = f"Classical {key_type} (Hardened)"
+        sim_key_size = "3072 bits"
+        sim_mwqrs = round(max(current_mwqrs * 0.65, 30.0), 1)
+        sim_qv_status = "Vulnerable to future CRQC (Shor's Algorithm) — Interim Classical Hardening"
+        sim_notes = "Increases classical cryptographic safety factor; does NOT protect against future CRQC. PQC migration still required."
+    else:  # HYBRID (default)
+        rec_replacement = f"Hybrid Mode: {hybrid_strategy}"
+        sim_algo = f"Hybrid Composite: {key_type}-{key_size} + ML-KEM-768"
+        sim_key_size = f"{key_size}b Classical + 768b PQC"
+        sim_mwqrs = 20.0 if "P0" in (asset_dict.get("service_criticality") or "") else 12.0
+        sim_qv_status = "Hybrid Protected (Classical Backwards-Compatible + PQC Secured)"
+        sim_notes = "Recommended transition approach: protects confidential traffic against HNDL while preserving interoperability with legacy clients."
 
     # Determine affected components using graph
     G = build_dependency_graph(db_path)
@@ -134,21 +199,49 @@ def simulate_migration(asset_id: int, db_path=DEFAULT_DB_PATH) -> dict:
     else:
         complexity = "High"
 
+    before_state = {
+        "algorithm": f"{key_type} ({key_size} bits)",
+        "algorithm_family": key_type,
+        "key_size": key_size,
+        "mwqrs_score": current_mwqrs,
+        "quantum_status": "Vulnerable to CRQC (Shor's Algorithm)" if (is_rsa or is_ecc) else "Quantum-Resistant",
+        "tls_version": tls_v,
+        "certificate_expiry_days": asset_dict.get("days_to_expiry"),
+    }
+
+    after_state = {
+        "strategy_applied": MIGRATION_STRATEGIES.get(strat_choice, {}).get("name", strat_choice),
+        "algorithm": sim_algo,
+        "key_size": sim_key_size,
+        "simulated_mwqrs_score": sim_mwqrs,
+        "risk_reduction": round(current_mwqrs - sim_mwqrs, 1),
+        "quantum_status": sim_qv_status,
+        "tls_version": "TLSv1.3 (Hybrid Enabled)",
+        "notes": sim_notes,
+    }
+
     return {
         "asset_id": asset_id,
         "host": asset_dict["host"],
         "port": asset_dict["port"],
-        "current_algorithm": f"{key_type} ({asset_dict.get('cert_key_size_bits') or 'Unknown'} bits)",
-        "quantum_status": "Vulnerable to CRQC (Shor's Algorithm)" if "RSA" in key_type or "ECC" in key_type else "Quantum-Resistant",
+        "current_algorithm": f"{key_type} ({key_size} bits)",
+        "quantum_status": before_state["quantum_status"],
         "service_name": service_name,
         "service_criticality": asset_dict.get("service_criticality") or "P2",
-        "recommended_replacement": pqc_info["replacement"],
+        "recommended_replacement": rec_replacement,
         "standards": pqc_info["standards"],
         "hybrid_mode": pqc_info["hybrid_recommended"],
         "migration_notes": pqc_info["migration_notes"],
+        "kem_replacement": kem_direction,
+        "signature_replacement": sig_direction,
+        "hybrid_modeling": hybrid_strategy,
         "affected_dependent_services": affected_components,
         "blast_radius_count": total_blast_radius,
         "migration_complexity": complexity,
+        "before_state": before_state,
+        "after_state": after_state,
+        "is_simulation": True,
+        "simulation_label": "Migration Simulation Model — Architectural Transition Projection (no production change deployed)",
     }
 
 
