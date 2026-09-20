@@ -37,6 +37,27 @@ CRITICALITY_MULTIPLIERS = {
     "P3": 0.8,
 }
 
+def get_linked_criticality(host: str, port: int, db_path=DEFAULT_DB_PATH) -> str:
+    """
+    Looks up whether host:port is already linked to a service in the database
+    (via seed_demo_data / seed_offline_demo_data's mapping) and returns that
+    service's criticality. Falls back to 'P2' if not linked yet.
+
+    This exists so a fresh live-scan preview scores CONSISTENTLY with the
+    main dashboard/simulator — both now read the same linkage from the DB,
+    instead of the live scanner defaulting blindly to P2 every time.
+    """
+    conn = get_db_connection(db_path)
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT s.criticality
+        FROM crypto_assets a
+        JOIN services s ON a.linked_service_id = s.id
+        WHERE a.host = ? AND a.port = ?
+    """, (host, port))
+    row = cursor.fetchone()
+    conn.close()
+    return row["criticality"] if row else "P2"
 
 def calculate_mwqrs(asset_record: dict, service_criticality: str = "P2") -> float:
     """

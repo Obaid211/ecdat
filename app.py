@@ -815,7 +815,11 @@ with tab7:
                         res = scanner_core.scan_host(host, port)
                         status = res.get("status")
                         scan_ok = status == "success"
-                        mwqrs_score = score_eng.calculate_mwqrs(res) if scan_ok else 0.0
+                        if scan_ok:
+                            linked_crit = score_eng.get_linked_criticality(host, port, DB_PATH)
+                            mwqrs_score = score_eng.calculate_mwqrs(res, service_criticality=linked_crit)
+                        else:
+                            mwqrs_score = 0.0
                         risk_band, risk_band_help = get_risk_band(mwqrs_score)
                         verdict, reason, recommendation, verdict_style = get_scan_verdict(res, mwqrs_score)
 
@@ -1036,7 +1040,11 @@ with tab7:
                     res = scanner_core.scan_host(host, port)
                     status = res.get("status")
                     scan_ok = status == "success"
-                    mwqrs_score = score_eng.calculate_mwqrs(res) if scan_ok else 0.0
+                    if scan_ok:
+                        linked_crit = score_eng.get_linked_criticality(host, port, DB_PATH)
+                        mwqrs_score = score_eng.calculate_mwqrs(res, service_criticality=linked_crit)
+                    else:
+                        mwqrs_score = 0.0
                     risk_band, risk_band_help = get_risk_band(mwqrs_score)
                     verdict, reason, recommendation, verdict_style = get_scan_verdict(res, mwqrs_score)
 
