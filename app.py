@@ -409,6 +409,9 @@ with tab_dash:
         c2.metric("Critical Quantum Risk (MWQRS ≥ 80)", critical_count, delta=f"{round(critical_count/total_scanned*100,1)}%", delta_color="inverse")
         c3.metric("Medium Quantum Risk (50-79)", medium_count)
         c4.metric("Average System MWQRS", f"{avg_score} / 100")
+        n_local_top = len(df[df["host"].astype(str).str.startswith("127.")])
+        n_public_top = total_scanned - n_local_top
+        st.caption(f"📌 {total_scanned} total DB records ({n_public_top} public-host scans + {n_local_top} local demo fixtures).")
 
         # Measured Performance Benchmark (Capability 13)
         scan_json_path = Path("scan_results.json")
@@ -419,7 +422,9 @@ with tab_dash:
                 bench_metrics = scanner_core.calculate_scan_benchmark(bench_raw)
                 st.markdown("---")
                 st.markdown("### ⚡ Measured Discovery & Risk Flagging Performance")
-                st.caption(f"📌 {bench_metrics['benchmark_label']} — Derived from genuine TLS handshake timings, not hardcoded assertions.")
+                scan_file_mtime = datetime.fromtimestamp(scan_json_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+                st.caption(f"📌 {bench_metrics['benchmark_label']} — Derived from genuine TLS handshake timings, not hardcoded assertions. "
+                f"Snapshot from scan_results.json (last updated {scan_file_mtime}); may differ from the live database counts above if a newer scan hasn't been re-ingested.")
                 bm1, bm2, bm3, bm4, bm5 = st.columns(5)
                 bm1.metric("Hosts Attempted", bench_metrics["total_attempted"])
                 bm2.metric("Successful Connections", bench_metrics["successful"])
@@ -484,7 +489,7 @@ with tab_dash:
                 band_counts.columns = ["Risk Band", "Count"]
                 st.dataframe(band_counts, use_container_width=True)
 
-        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned}, scanned at {latest_scan}); not a market-wide claim. Risk classification informed by NIST SP 800-52 Rev. 2 guidelines.")
+        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned} of {n_attempted} attempted, {n_unreachable} unreachable; scanned at {latest_scan}); not a market-wide claim. Risk classification informed by NIST SP 800-52 Rev. 2 guidelines.")
         st.markdown("---")
 
         col_left, col_right = st.columns(2)
@@ -602,8 +607,9 @@ with tab_inv:
             filtered_inv = filtered_inv[
                 filtered_inv["quantum_status"].str.contains("Quantum-Vulnerable", case=False, na=False)
             ]
-
         st.markdown(f"**Showing {len(filtered_inv)} of {len(inv_df)} cryptographic assets**")
+        n_local_inv = len(inv_df[inv_df["host"].astype(str).str.startswith("127.")])
+        st.caption(f"📌 {len(inv_df)} total includes {n_local_inv} local demo fixtures + historical records; public-host-only counts are shown on the Executive Dashboard.")
         st.dataframe(
             filtered_inv[[
                 "asset_id", "host", "port", "service", "service_criticality",
@@ -1275,12 +1281,16 @@ with tab_comp:
         mig_req_c = sum(1 for a in norm_comp if a.get("migration_status") == "Migration Required")
         unknown_c = total_c - (qv_c + pqc_c)
 
+       
         cp1, cp2, cp3, cp4, cp5 = st.columns(5)
         cp1.metric("Total Cryptographic Assets", total_c)
         cp2.metric("Quantum-Vulnerable", qv_c, delta=f"{round(qv_c/total_c*100,1)}%", delta_color="inverse")
         cp3.metric("PQC-Ready / Migrated", pqc_c)
         cp4.metric("Migration Required", mig_req_c)
         cp5.metric("Unknown / Under Review", unknown_c)
+
+        n_local_c = sum(1 for a in norm_comp if str(a.get("host", "")).startswith("127."))
+        st.caption(f"📌 {total_c} total includes {n_local_c} local demo fixtures + historical records; public-host-only counts are shown on the Executive Dashboard.")
 
         st.markdown("---")
         st.markdown("### 📋 Technical Control Status Checklist")
