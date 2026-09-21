@@ -88,7 +88,8 @@ st.markdown("""
 
 
 # Sidebar Actions
-st.sidebar.image("https://img.icons8.com/color/96/shield-with-encryption.png", width=70)
+st.sidebar.image(
+    "https://img.icons8.com/color/96/shield-with-encryption.png", width=70)
 st.sidebar.title("Pipeline Controls")
 
 
@@ -133,10 +134,12 @@ if mode_selection == "🟡 CACHED MODE":
     if fallback_db.exists():
         DB_PATH = "demo_fallback.db"
         cached_dataset_label = get_cached_dataset_label(DB_PATH)
-        st.sidebar.warning(f"🟡 CACHED MODE ACTIVE\nUsing {cached_dataset_label}. Live database modifications are isolated.")
+        st.sidebar.warning(
+            f"🟡 CACHED MODE ACTIVE\nUsing {cached_dataset_label}. Live database modifications are isolated.")
     else:
         DB_PATH = inv.DEFAULT_DB_PATH
-        st.sidebar.error("⚠️ `demo_fallback.db` not found! Falling back to live `ecdat.db`.")
+        st.sidebar.error(
+            "⚠️ `demo_fallback.db` not found! Falling back to live `ecdat.db`.")
 
 elif mode_selection == "🔵 OFFLINE MODE":
     DB_PATH = OFFLINE_DB_PATH
@@ -165,9 +168,11 @@ elif mode_selection == "🔵 OFFLINE MODE":
         snapshot_time = datetime.fromtimestamp(
             os.path.getmtime(OFFLINE_DB_PATH)
         ).strftime("%Y-%m-%d %H:%M:%S")
-        st.sidebar.caption(f"DB: `offline_ecdat.db` | Last updated: {snapshot_time}")
+        st.sidebar.caption(
+            f"DB: `offline_ecdat.db` | Last updated: {snapshot_time}")
     else:
-        st.sidebar.warning("⚠️ No offline database yet — click Initialize below.")
+        st.sidebar.warning(
+            "⚠️ No offline database yet — click Initialize below.")
 
     st.sidebar.markdown("---")
     st.sidebar.markdown("**Offline Data Controls**")
@@ -212,7 +217,8 @@ elif mode_selection == "🔵 OFFLINE MODE":
 
 else:
     DB_PATH = inv.DEFAULT_DB_PATH
-    st.sidebar.success("🟢 LIVE MODE ACTIVE\nConnected to live operational database (`ecdat.db`).")
+    st.sidebar.success(
+        "🟢 LIVE MODE ACTIVE\nConnected to live operational database (`ecdat.db`).")
 
 st.sidebar.markdown("---")
 
@@ -220,11 +226,13 @@ st.sidebar.markdown("---")
 inv.init_db(DB_PATH)
 
 # Title & Info Header
-st.markdown('<div class="main-header">ECDAT — Enterprise Cryptographic Discovery & Analysis Tool</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">ECDAT — Enterprise Cryptographic Discovery & Analysis Tool</div>',
+            unsafe_allow_html=True)
 st.markdown('<div class="sub-header">SIH26164 (NTRO / Post-Quantum Cryptography & Keyfactor AgileSec Pipeline Model)</div>', unsafe_allow_html=True)
 
 if mode_selection == "🟡 CACHED MODE" and Path("demo_fallback.db").exists():
-    st.info(f"🟡 **CACHED DEMO MODE ACTIVE**: Dashboard is rendering {get_cached_dataset_label(DB_PATH)} from `demo_fallback.db`.")
+    st.info(
+        f"🟡 **CACHED DEMO MODE ACTIVE**: Dashboard is rendering {get_cached_dataset_label(DB_PATH)} from `demo_fallback.db`.")
 elif mode_selection == "🔵 OFFLINE MODE":
     offline_exists = Path(OFFLINE_DB_PATH).exists()
     if offline_exists:
@@ -244,7 +252,8 @@ elif mode_selection == "🔵 OFFLINE MODE":
             "Start local TLS test servers first: `python generate_test_certs.py`"
         )
 else:
-    st.caption("🟢 **LIVE MODE ACTIVE**: Dashboard is rendering dynamic operational database from `ecdat.db`.")
+    st.caption(
+        "🟢 **LIVE MODE ACTIVE**: Dashboard is rendering dynamic operational database from `ecdat.db`.")
 
 if st.sidebar.button("🔄 Refresh Data & Recalculate Scores"):
     score_eng.score_all_assets(DB_PATH)
@@ -395,23 +404,28 @@ def get_scan_verdict(res, mwqrs_score):
 # ---------------------------------------------------------
 with tab_dash:
     if df.empty:
-        st.warning("No crypto assets scanned yet. Run a scan from the 'Live TLS Scanner' tab or run cli.py.")
+        st.warning(
+            "No crypto assets scanned yet. Run a scan from the 'Live TLS Scanner' tab or run cli.py.")
     else:
         # Top KPI Metrics
         total_scanned = len(df)
         critical_count = len(df[df["risk_score"] >= 80.0])
-        medium_count = len(df[(df["risk_score"] >= 50.0) & (df["risk_score"] < 80.0)])
+        medium_count = len(df[(df["risk_score"] >= 50.0)
+                           & (df["risk_score"] < 80.0)])
         safe_count = len(df[df["risk_score"] < 50.0])
         avg_score = round(df["risk_score"].mean(), 1)
 
         c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Total Scanned Endpoints", total_scanned, delta="Database Records")
-        c2.metric("Critical Quantum Risk (MWQRS ≥ 80)", critical_count, delta=f"{round(critical_count/total_scanned*100,1)}%", delta_color="inverse")
+        c1.metric("Total Scanned Endpoints",
+                  total_scanned, delta="Database Records")
+        c2.metric("Critical Quantum Risk (MWQRS ≥ 80)", critical_count,
+                  delta=f"{round(critical_count/total_scanned*100, 1)}%", delta_color="inverse")
         c3.metric("Medium Quantum Risk (50-79)", medium_count)
         c4.metric("Average System MWQRS", f"{avg_score} / 100")
         n_local_top = len(df[df["host"].astype(str).str.startswith("127.")])
         n_public_top = total_scanned - n_local_top
-        st.caption(f"📌 {total_scanned} total DB records ({n_public_top} public-host scans + {n_local_top} local demo fixtures).")
+        st.caption(
+            f"📌 {total_scanned} total DB records ({n_public_top} public-host scans + {n_local_top} local demo fixtures).")
 
         # Measured Performance Benchmark (Capability 13)
         scan_json_path = Path("scan_results.json")
@@ -419,18 +433,25 @@ with tab_dash:
             try:
                 with open(scan_json_path, "r", encoding="utf-8") as f:
                     bench_raw = json.load(f)
-                bench_metrics = scanner_core.calculate_scan_benchmark(bench_raw)
+                bench_metrics = scanner_core.calculate_scan_benchmark(
+                    bench_raw)
                 st.markdown("---")
-                st.markdown("### ⚡ Measured Discovery & Risk Flagging Performance")
-                scan_file_mtime = datetime.fromtimestamp(scan_json_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+                st.markdown(
+                    "### ⚡ Measured Discovery & Risk Flagging Performance")
+                scan_file_mtime = datetime.fromtimestamp(
+                    scan_json_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
                 st.caption(f"📌 {bench_metrics['benchmark_label']} — Derived from genuine TLS handshake timings, not hardcoded assertions. "
-                f"Snapshot from scan_results.json (last updated {scan_file_mtime}); may differ from the live database counts above if a newer scan hasn't been re-ingested.")
+                           f"Snapshot from scan_results.json (last updated {scan_file_mtime}); may differ from the live database counts above if a newer scan hasn't been re-ingested.")
                 bm1, bm2, bm3, bm4, bm5 = st.columns(5)
                 bm1.metric("Hosts Attempted", bench_metrics["total_attempted"])
-                bm2.metric("Successful Connections", bench_metrics["successful"])
-                bm3.metric("Average Duration", f"{bench_metrics['average_seconds']}s / host")
-                bm4.metric("Median Duration", f"{bench_metrics['median_seconds']}s")
-                bm5.metric("Max Handshake Time", f"{bench_metrics['max_seconds']}s")
+                bm2.metric("Successful Connections",
+                           bench_metrics["successful"])
+                bm3.metric("Average Duration",
+                           f"{bench_metrics['average_seconds']}s / host")
+                bm4.metric("Median Duration",
+                           f"{bench_metrics['median_seconds']}s")
+                bm5.metric("Max Handshake Time",
+                           f"{bench_metrics['max_seconds']}s")
             except Exception:
                 pass
 
@@ -442,39 +463,48 @@ with tab_dash:
         st.markdown("### 🌐 Aggregate Public Host Scan Statistics")
 
         # Filter real scanned hosts (excluding local loopback / demo seeds)
-        real_df = df[~df["host"].str.startswith("127.")].copy() if not df.empty else pd.DataFrame()
+        real_df = df[~df["host"].str.startswith(
+            "127.")].copy() if not df.empty else pd.DataFrame()
         n_attempted = len(real_df)
-        n_scanned = len(real_df[real_df["status"] == "success"]) if not real_df.empty else 0
-        n_unreachable = len(real_df[real_df["status"] == "unreachable"]) if not real_df.empty else 0
+        n_scanned = len(real_df[real_df["status"] ==
+                        "success"]) if not real_df.empty else 0
+        n_unreachable = len(
+            real_df[real_df["status"] == "unreachable"]) if not real_df.empty else 0
 
         # Quantum Vulnerable Breakdown (RSA vs ECC)
         if not real_df.empty and n_scanned > 0:
-            rsa_count = len(real_df[real_df["cert_key_type"].astype(str).str.contains("RSA", na=False)])
-            ecc_count = len(real_df[real_df["cert_key_type"].astype(str).str.contains("ECC", na=False)])
+            rsa_count = len(real_df[real_df["cert_key_type"].astype(
+                str).str.contains("RSA", na=False)])
+            ecc_count = len(real_df[real_df["cert_key_type"].astype(
+                str).str.contains("ECC", na=False)])
             qv_pct = round((rsa_count + ecc_count) / n_scanned * 100, 1)
         else:
             qv_pct = 0.0
 
-        latest_scan = real_df["scanned_at"].max() if not real_df.empty and "scanned_at" in real_df and not real_df["scanned_at"].isnull().all() else "N/A"
+        latest_scan = real_df["scanned_at"].max(
+        ) if not real_df.empty and "scanned_at" in real_df and not real_df["scanned_at"].isnull().all() else "N/A"
 
         p1, p2, p3, p4, p5 = st.columns(5)
         p1.metric("Attempted Hosts", n_attempted)
         p2.metric("Successfully Scanned", n_scanned)
         p3.metric("Unreachable Hosts", n_unreachable)
-        p4.metric("Quantum Vulnerable %", f"{qv_pct}%", help="RSA or ECC public keys vulnerable to Shor's algorithm on a future CRQC")
+        p4.metric("Quantum Vulnerable %",
+                  f"{qv_pct}%", help="RSA or ECC public keys vulnerable to Shor's algorithm on a future CRQC")
         p5.metric("Sample Size (n)", n_scanned)
 
         col_st1, col_st2, col_st3 = st.columns(3)
         with col_st1:
             st.markdown("**TLS Version Distribution**")
             if not real_df.empty and "tls_version" in real_df:
-                tls_counts = real_df["tls_version"].value_counts().reset_index()
+                tls_counts = real_df["tls_version"].value_counts(
+                ).reset_index()
                 tls_counts.columns = ["TLS Version", "Count"]
                 st.dataframe(tls_counts, use_container_width=True)
         with col_st2:
             st.markdown("**Key Algorithm Distribution**")
             if not real_df.empty and "cert_key_type" in real_df:
-                algo_counts = real_df["cert_key_type"].value_counts().reset_index()
+                algo_counts = real_df["cert_key_type"].value_counts(
+                ).reset_index()
                 algo_counts.columns = ["Algorithm", "Count"]
                 st.dataframe(algo_counts, use_container_width=True)
         with col_st3:
@@ -489,7 +519,8 @@ with tab_dash:
                 band_counts.columns = ["Risk Band", "Count"]
                 st.dataframe(band_counts, use_container_width=True)
 
-        st.caption(f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned} of {n_attempted} attempted, {n_unreachable} unreachable; scanned at {latest_scan}); not a market-wide claim. Risk classification informed by NIST SP 800-52 Rev. 2 guidelines.")
+        st.caption(
+            f"📌 **Disclaimer**: Point-in-time sample of public front pages (n={n_scanned} of {n_attempted} attempted, {n_unreachable} unreachable; scanned at {latest_scan}); not a market-wide claim. Risk classification informed by NIST SP 800-52 Rev. 2 guidelines.")
         st.markdown("---")
 
         col_left, col_right = st.columns(2)
@@ -499,7 +530,8 @@ with tab_dash:
             df["Risk_Category"] = pd.cut(
                 df["risk_score"],
                 bins=[-1, 49.9, 79.9, 100],
-                labels=["Quantum Safe / Low", "Medium Risk", "Critical Risk (MWQRS ≥80)"]
+                labels=["Quantum Safe / Low", "Medium Risk",
+                        "Critical Risk (MWQRS ≥80)"]
             )
             risk_counts = df["Risk_Category"].value_counts().reset_index()
             risk_counts.columns = ["Category", "Count"]
@@ -522,7 +554,8 @@ with tab_dash:
         with col_right:
             st.subheader("Key Type & Bit Strength Breakdown")
             df["Key_Display"] = df.apply(
-                lambda x: f"{x['cert_key_type']} {x['cert_key_size_bits']}b" if pd.notnull(x['cert_key_size_bits']) else str(x['cert_key_type']),
+                lambda x: f"{x['cert_key_type']} {x['cert_key_size_bits']}b" if pd.notnull(
+                    x['cert_key_size_bits']) else str(x['cert_key_type']),
                 axis=1
             )
             key_counts = df["Key_Display"].value_counts().reset_index()
@@ -534,16 +567,19 @@ with tab_dash:
                 y="Count",
                 color="Key_Type",
                 text="Count",
-                labels={"Key_Type": "Certificate Key Specification", "Count": "Asset Count"},
+                labels={"Key_Type": "Certificate Key Specification",
+                        "Count": "Asset Count"},
                 color_discrete_sequence=px.colors.qualitative.Pastel
             )
-            fig_bar.update_layout(showlegend=False, margin=dict(t=20, b=20, l=20, r=20))
+            fig_bar.update_layout(
+                showlegend=False, margin=dict(t=20, b=20, l=20, r=20))
             st.plotly_chart(fig_bar, use_container_width=True)
 
         st.subheader("🔥 Top Vulnerable Cryptographic Assets")
         top_vuln = df.sort_values(by="risk_score", ascending=False).head(5)
         st.dataframe(
-            top_vuln[["host", "port", "tls_version", "cert_key_type", "cert_key_size_bits", "risk_score", "service_name", "risk_flags"]],
+            top_vuln[["host", "port", "tls_version", "cert_key_type",
+                      "cert_key_size_bits", "risk_score", "service_name", "risk_flags"]],
             use_container_width=True
         )
 
@@ -566,49 +602,68 @@ with tab_inv:
             f_col1, f_col2, f_col3, f_col4 = st.columns(4)
             with f_col1:
                 search_term = st.text_input("Search Host or Service", "")
-                sev_options = ["All"] + sorted(list(inv_df["severity"].dropna().unique()))
+                sev_options = ["All"] + \
+                    sorted(list(inv_df["severity"].dropna().unique()))
                 selected_sev = st.selectbox("Filter by Severity", sev_options)
             with f_col2:
-                algo_options = ["All"] + sorted(list(inv_df["algorithm_category"].dropna().unique()))
-                selected_algo = st.selectbox("Algorithm Category", algo_options)
-                crit_options = ["All"] + sorted(list(inv_df["service_criticality"].dropna().unique()))
-                selected_crit = st.selectbox("Service Criticality", crit_options)
+                algo_options = [
+                    "All"] + sorted(list(inv_df["algorithm_category"].dropna().unique()))
+                selected_algo = st.selectbox(
+                    "Algorithm Category", algo_options)
+                crit_options = [
+                    "All"] + sorted(list(inv_df["service_criticality"].dropna().unique()))
+                selected_crit = st.selectbox(
+                    "Service Criticality", crit_options)
             with f_col3:
-                tls_options = ["All"] + sorted(list(inv_df["tls_version"].dropna().unique()))
+                tls_options = [
+                    "All"] + sorted(list(inv_df["tls_version"].dropna().unique()))
                 selected_tls = st.selectbox("TLS Version", tls_options)
-                pqc_options = ["All"] + sorted(list(inv_df["migration_status"].dropna().unique()))
+                pqc_options = [
+                    "All"] + sorted(list(inv_df["migration_status"].dropna().unique()))
                 selected_pqc = st.selectbox("Migration Status", pqc_options)
             with f_col4:
-                filter_expiring_only = st.checkbox("Show Approaching Expiry (≤90 days)", False)
-                filter_vulnerable_only = st.checkbox("Show Quantum-Vulnerable Only", False)
+                filter_expiring_only = st.checkbox(
+                    "Show Approaching Expiry (≤90 days)", False)
+                filter_vulnerable_only = st.checkbox(
+                    "Show Quantum-Vulnerable Only", False)
 
         # Apply Filters
         filtered_inv = inv_df.copy()
         if search_term:
             filtered_inv = filtered_inv[
                 filtered_inv["host"].str.contains(search_term, case=False, na=False) |
-                filtered_inv["service"].str.contains(search_term, case=False, na=False)
+                filtered_inv["service"].str.contains(
+                    search_term, case=False, na=False)
             ]
         if selected_sev != "All":
-            filtered_inv = filtered_inv[filtered_inv["severity"] == selected_sev]
+            filtered_inv = filtered_inv[filtered_inv["severity"]
+                                        == selected_sev]
         if selected_algo != "All":
-            filtered_inv = filtered_inv[filtered_inv["algorithm_category"] == selected_algo]
+            filtered_inv = filtered_inv[filtered_inv["algorithm_category"]
+                                        == selected_algo]
         if selected_crit != "All":
-            filtered_inv = filtered_inv[filtered_inv["service_criticality"] == selected_crit]
+            filtered_inv = filtered_inv[filtered_inv["service_criticality"]
+                                        == selected_crit]
         if selected_tls != "All":
-            filtered_inv = filtered_inv[filtered_inv["tls_version"] == selected_tls]
+            filtered_inv = filtered_inv[filtered_inv["tls_version"]
+                                        == selected_tls]
         if selected_pqc != "All":
-            filtered_inv = filtered_inv[filtered_inv["migration_status"] == selected_pqc]
+            filtered_inv = filtered_inv[filtered_inv["migration_status"]
+                                        == selected_pqc]
         if filter_expiring_only:
             filtered_inv = filtered_inv[
-                filtered_inv["days_to_expiry"].notnull() & (filtered_inv["days_to_expiry"] <= 90)
+                filtered_inv["days_to_expiry"].notnull() & (
+                    filtered_inv["days_to_expiry"] <= 90)
             ]
         if filter_vulnerable_only:
             filtered_inv = filtered_inv[
-                filtered_inv["quantum_status"].str.contains("Quantum-Vulnerable", case=False, na=False)
+                filtered_inv["quantum_status"].str.contains(
+                    "Quantum-Vulnerable", case=False, na=False)
             ]
-        st.markdown(f"**Showing {len(filtered_inv)} of {len(inv_df)} cryptographic assets**")
-        n_local_inv = len(inv_df[inv_df["host"].astype(str).str.startswith("127.")])
+        st.markdown(
+            f"**Showing {len(filtered_inv)} of {len(inv_df)} cryptographic assets**")
+        n_local_inv = len(
+            inv_df[inv_df["host"].astype(str).str.startswith("127.")])
         st.caption(f"📌 {len(inv_df)} total includes {n_local_inv} local demo fixtures + historical records; public-host-only counts are shown on the Executive Dashboard.")
         st.dataframe(
             filtered_inv[[
@@ -622,40 +677,54 @@ with tab_inv:
 
         # Detailed Asset Card Inspector
         st.markdown("### 🔎 Deep-Dive Asset Inspection Card")
-        asset_select_list = [f"ID {r['asset_id']}: {r['host']}:{r['port']} ({r['service']})" for _, r in filtered_inv.iterrows()]
+        asset_select_list = [
+            f"ID {r['asset_id']}: {r['host']}:{r['port']} ({r['service']})" for _, r in filtered_inv.iterrows()]
         if asset_select_list:
-            selected_asset_label = st.selectbox("Select Asset to Inspect:", asset_select_list)
-            sel_id = int(selected_asset_label.split(":")[0].replace("ID", "").strip())
-            sel_asset = next((a for a in norm_assets if a["asset_id"] == sel_id), None)
+            selected_asset_label = st.selectbox(
+                "Select Asset to Inspect:", asset_select_list)
+            sel_id = int(selected_asset_label.split(":")
+                         [0].replace("ID", "").strip())
+            sel_asset = next(
+                (a for a in norm_assets if a["asset_id"] == sel_id), None)
 
             if sel_asset:
                 ai1, ai2, ai3 = st.columns([1, 1, 1])
                 with ai1:
-                    st.markdown(f"**Target:** `{sel_asset['host']}:{sel_asset['port']}`")
-                    st.markdown(f"**Service:** {sel_asset['service']} ({sel_asset['service_criticality']})")
+                    st.markdown(
+                        f"**Target:** `{sel_asset['host']}:{sel_asset['port']}`")
+                    st.markdown(
+                        f"**Service:** {sel_asset['service']} ({sel_asset['service_criticality']})")
                     st.markdown(f"**Source:** {sel_asset['source']}")
-                    st.markdown(f"**MWQRS Score:** **{sel_asset['mwqrs']} / 100** ({sel_asset['severity']})")
+                    st.markdown(
+                        f"**MWQRS Score:** **{sel_asset['mwqrs']} / 100** ({sel_asset['severity']})")
                 with ai2:
-                    st.markdown(f"**Algorithm:** `{sel_asset['algorithm']}` ({sel_asset['key_size']} bits)")
-                    st.markdown(f"**Category:** {sel_asset['algorithm_category']}")
+                    st.markdown(
+                        f"**Algorithm:** `{sel_asset['algorithm']}` ({sel_asset['key_size']} bits)")
+                    st.markdown(
+                        f"**Category:** {sel_asset['algorithm_category']}")
                     st.markdown(f"**TLS Version:** {sel_asset['tls_version']}")
                     st.markdown(f"**Cipher:** {sel_asset['cipher_info']}")
                 with ai3:
-                    st.markdown(f"**Days to Expiry:** {sel_asset['days_to_expiry']} days")
-                    st.markdown(f"**Quantum Status:** {sel_asset['quantum_status']}")
-                    st.markdown(f"**Recommended PQC:** `{sel_asset['recommended_pqc']}`")
+                    st.markdown(
+                        f"**Days to Expiry:** {sel_asset['days_to_expiry']} days")
+                    st.markdown(
+                        f"**Quantum Status:** {sel_asset['quantum_status']}")
+                    st.markdown(
+                        f"**Recommended PQC:** `{sel_asset['recommended_pqc']}`")
                     st.markdown(f"**Status:** {sel_asset['migration_status']}")
 
                 with st.expander("X.509 Certificate Metadata & Detected Risk Flags", expanded=False):
                     st.write(f"**Subject:** {sel_asset['cert_subject']}")
                     st.write(f"**Issuer:** {sel_asset['cert_issuer']}")
-                    st.write(f"**Not After (Expiry):** {sel_asset['cert_expiry']}")
+                    st.write(
+                        f"**Not After (Expiry):** {sel_asset['cert_expiry']}")
                     if sel_asset['risk_flags']:
                         st.write("**Detected Risk Flags:**")
                         for f in sel_asset['risk_flags']:
                             st.write(f"- `{f}`: {explain_risk_flag(f)}")
                     else:
-                        st.write("No active risk flags detected for this asset.")
+                        st.write(
+                            "No active risk flags detected for this asset.")
 
         # Export Normalized Inventory
         st.markdown("---")
@@ -681,9 +750,12 @@ with tab_rem:
         st.info("No assets requiring remediation found.")
     else:
         # Summary counts
-        crit_rem_count = sum(1 for item in remediation_plan if item["mwqrs"] >= 80.0)
-        urgent_exp_count = sum(1 for item in remediation_plan if item["days_to_expiry"] is not None and item["days_to_expiry"] <= 30)
-        high_blast_count = sum(1 for item in remediation_plan if len(item["downstream_services"]) >= 2)
+        crit_rem_count = sum(
+            1 for item in remediation_plan if item["mwqrs"] >= 80.0)
+        urgent_exp_count = sum(
+            1 for item in remediation_plan if item["days_to_expiry"] is not None and item["days_to_expiry"] <= 30)
+        high_blast_count = sum(1 for item in remediation_plan if len(
+            item["downstream_services"]) >= 2)
 
         rc1, rc2, rc3, rc4 = st.columns(4)
         rc1.metric("Prioritized Action Items", len(remediation_plan))
@@ -696,18 +768,25 @@ with tab_rem:
 
         for item in remediation_plan[:10]:
             with st.container():
-                rank_badge = "🔴" if item["mwqrs"] >= 80 else ("🟠" if item["mwqrs"] >= 50 else "🟢")
-                st.markdown(f"#### {rank_badge} #{item['priority_rank']} — `{item['target']}` ({item['service']})")
+                rank_badge = "🔴" if item["mwqrs"] >= 80 else (
+                    "🟠" if item["mwqrs"] >= 50 else "🟢")
+                st.markdown(
+                    f"#### {rank_badge} #{item['priority_rank']} — `{item['target']}` ({item['service']})")
 
                 c_m1, c_m2, c_m3, c_m4 = st.columns(4)
-                c_m1.markdown(f"**MWQRS:** `{item['mwqrs']}/100` ({item['severity']})")
+                c_m1.markdown(
+                    f"**MWQRS:** `{item['mwqrs']}/100` ({item['severity']})")
                 c_m2.markdown(f"**Criticality:** `{item['criticality']}`")
-                c_m3.markdown(f"**Algorithm:** `{item['algorithm']}` ({item['key_size']}b)")
-                c_m4.markdown(f"**Expires In:** `{item['days_to_expiry']} days`")
+                c_m3.markdown(
+                    f"**Algorithm:** `{item['algorithm']}` ({item['key_size']}b)")
+                c_m4.markdown(
+                    f"**Expires In:** `{item['days_to_expiry']} days`")
 
                 st.markdown(f"**Why Prioritized:** {item['why_prioritized']}")
-                st.markdown(f"**Migration Direction:** `{item['migration_direction']}`")
-                st.markdown(f"**Dependency Impact:** {item['dependency_impact']}")
+                st.markdown(
+                    f"**Migration Direction:** `{item['migration_direction']}`")
+                st.markdown(
+                    f"**Dependency Impact:** {item['dependency_impact']}")
 
                 with st.expander("View Prescribed Remediation Actions"):
                     for act in item["recommended_actions"]:
@@ -739,7 +818,8 @@ with tab_rem:
 # TAB 4: THREAT TIMELINE & URGENCY (Capability 3)
 # ---------------------------------------------------------
 with tab_threat:
-    st.subheader("⏳ Mosca-Inspired Cryptographic Threat Timeline & Migration Urgency")
+    st.subheader(
+        "⏳ Mosca-Inspired Cryptographic Threat Timeline & Migration Urgency")
     st.info(
         "💡 **Methodology Disclaimer**: This module implements a Mosca-inspired urgency framework: "
         "`Data Shelf-Life (Y) + Migration Effort (X) > Organizational Planning Horizon (Z)`.  \n"
@@ -750,8 +830,10 @@ with tab_threat:
     norm_assets_threat = inv.get_normalized_inventory(DB_PATH)
     if norm_assets_threat:
         st.markdown("### 🧮 Interactive Migration Urgency Calculator")
-        threat_options = {f"{a['host']}:{a['port']} ({a['service']} - {a['algorithm']})": a for a in norm_assets_threat}
-        sel_threat_label = st.selectbox("Select Asset to Evaluate Urgency:", list(threat_options.keys()))
+        threat_options = {
+            f"{a['host']}:{a['port']} ({a['service']} - {a['algorithm']})": a for a in norm_assets_threat}
+        sel_threat_label = st.selectbox(
+            "Select Asset to Evaluate Urgency:", list(threat_options.keys()))
         target_threat_asset = threat_options[sel_threat_label]
 
         tc1, tc2 = st.columns(2)
@@ -759,7 +841,8 @@ with tab_threat:
             sens_choice = st.selectbox(
                 "Data Sensitivity Tier:",
                 list(threat_eng.DATA_SENSITIVITY_PROFILES.keys()),
-                index=2 if target_threat_asset.get("service_criticality") == "P1" else (3 if target_threat_asset.get("service_criticality") == "P0" else 1)
+                index=2 if target_threat_asset.get("service_criticality") == "P1" else (
+                    3 if target_threat_asset.get("service_criticality") == "P0" else 1)
             )
             profile = threat_eng.DATA_SENSITIVITY_PROFILES[sens_choice]
             shelf_life_input = st.slider(
@@ -786,7 +869,8 @@ with tab_threat:
             )
 
         # Calculate Urgency
-        is_qv = "Quantum-Vulnerable" in target_threat_asset.get("quantum_status", "")
+        is_qv = "Quantum-Vulnerable" in target_threat_asset.get(
+            "quantum_status", "")
         urgency_eval = threat_eng.calculate_migration_urgency(
             shelf_life_years=shelf_life_input,
             migration_time_years=mig_time_input,
@@ -800,27 +884,36 @@ with tab_threat:
         # Display Urgency Result Card
         st.markdown("---")
         u_col1, u_col2, u_col3 = st.columns(3)
-        u_col1.metric("Combined Requirement (X + Y)", f"{urgency_eval['combined_requirement_years']} years")
-        u_col2.metric("Planning Assumption (Z)", f"{urgency_eval['planning_horizon_years']} years")
+        u_col1.metric("Combined Requirement (X + Y)",
+                      f"{urgency_eval['combined_requirement_years']} years")
+        u_col2.metric("Planning Assumption (Z)",
+                      f"{urgency_eval['planning_horizon_years']} years")
 
-        margin_label = f"{abs(urgency_eval['margin_or_deficit_years'])}y Deficit" if urgency_eval['is_deficit'] else f"{urgency_eval['margin_or_deficit_years']}y Headroom"
+        margin_label = f"{abs(urgency_eval['margin_or_deficit_years'])}y Deficit" if urgency_eval[
+            'is_deficit'] else f"{urgency_eval['margin_or_deficit_years']}y Headroom"
         u_col3.metric("Timeline Margin / Deficit", margin_label)
 
         if urgency_eval["urgency_level"] == "CRITICAL":
-            st.error(f"🚨 **Migration Urgency: CRITICAL**  \n{urgency_eval['summary_reason']}")
+            st.error(
+                f"🚨 **Migration Urgency: CRITICAL**  \n{urgency_eval['summary_reason']}")
         elif urgency_eval["urgency_level"] == "HIGH":
-            st.warning(f"⚠️ **Migration Urgency: HIGH**  \n{urgency_eval['summary_reason']}")
+            st.warning(
+                f"⚠️ **Migration Urgency: HIGH**  \n{urgency_eval['summary_reason']}")
         elif urgency_eval["urgency_level"] == "MEDIUM":
-            st.info(f"🟡 **Migration Urgency: MEDIUM**  \n{urgency_eval['summary_reason']}")
+            st.info(
+                f"🟡 **Migration Urgency: MEDIUM**  \n{urgency_eval['summary_reason']}")
         else:
-            st.success(f"✅ **Migration Urgency: LOW**  \n{urgency_eval['summary_reason']}")
+            st.success(
+                f"✅ **Migration Urgency: LOW**  \n{urgency_eval['summary_reason']}")
 
-        st.markdown(f"**Recommended Action:** {urgency_eval['recommended_action']}")
+        st.markdown(
+            f"**Recommended Action:** {urgency_eval['recommended_action']}")
 
         # Full Threat Timeline Urgency Ranking Table
         st.markdown("---")
         st.markdown("### 📊 Inventory-Wide Threat Urgency Rankings")
-        inventory_urgencies = threat_eng.evaluate_inventory_threat_urgency(DB_PATH, planning_horizon_years=horizon_input)
+        inventory_urgencies = threat_eng.evaluate_inventory_threat_urgency(
+            DB_PATH, planning_horizon_years=horizon_input)
         u_df = pd.DataFrame(inventory_urgencies)
         st.dataframe(
             u_df[[
@@ -869,7 +962,8 @@ with tab_graph:
             color = "#10B981"  # Green
 
         node_colors.append(color)
-        node_text.append(f"Service: {svc_name}<br>Criticality: {svc_crit}<br>Max MWQRS Risk: {max_score}")
+        node_text.append(
+            f"Service: {svc_name}<br>Criticality: {svc_crit}<br>Max MWQRS Risk: {max_score}")
 
     conn.close()
 
@@ -905,13 +999,13 @@ with tab_graph:
     )
 
     fig_net = go.Figure(data=[edge_trace, node_trace],
-             layout=go.Layout(
-                showlegend=False,
-                hovermode='closest',
-                margin=dict(b=20,l=5,r=5,t=20),
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
-            ))
+                        layout=go.Layout(
+        showlegend=False,
+        hovermode='closest',
+        margin=dict(b=20, l=5, r=5, t=20),
+        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
+        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False)
+    ))
 
     st.plotly_chart(fig_net, use_container_width=True)
     st.info("🟢 Safe (MWQRS < 50) | 🟠 Medium (50-79) | 🔴 Critical Risk (MWQRS ≥ 80)")
@@ -921,25 +1015,32 @@ with tab_graph:
     st.markdown("### 💥 Interactive Service Blast Radius Inspection")
     service_names_list = [G.nodes[n].get("name") for n in G.nodes()]
     if service_names_list:
-        sel_svc_name = st.selectbox("Select Service to Calculate Downstream Blast Radius:", service_names_list)
-        sel_node_id = next((n for n in G.nodes() if G.nodes[n].get("name") == sel_svc_name), None)
+        sel_svc_name = st.selectbox(
+            "Select Service to Calculate Downstream Blast Radius:", service_names_list)
+        sel_node_id = next(
+            (n for n in G.nodes() if G.nodes[n].get("name") == sel_svc_name), None)
 
         if sel_node_id is not None:
             # Direct dependencies (services this service depends on)
-            direct_deps = [G.nodes[v].get("name") for _, v in G.out_edges(sel_node_id)]
+            direct_deps = [G.nodes[v].get("name")
+                           for _, v in G.out_edges(sel_node_id)]
             # Downstream dependents (services that depend on this service)
             downstream_deps = sim_eng.get_affected_dependents(sel_node_id, G)
             total_blast = len(downstream_deps) + 1
 
             br_col1, br_col2, br_col3 = st.columns(3)
             br_col1.metric("Direct Dependencies", len(direct_deps))
-            br_col2.metric("Downstream Dependent Services", len(downstream_deps))
-            br_col3.metric("Calculated Blast Radius", f"{total_blast} Services")
+            br_col2.metric("Downstream Dependent Services",
+                           len(downstream_deps))
+            br_col3.metric("Calculated Blast Radius",
+                           f"{total_blast} Services")
 
             if downstream_deps:
-                st.warning(f"⚠️ If **{sel_svc_name}** is migrated or interrupted, the following **{len(downstream_deps)}** downstream services are impacted: {', '.join(downstream_deps)}")
+                st.warning(
+                    f"⚠️ If **{sel_svc_name}** is migrated or interrupted, the following **{len(downstream_deps)}** downstream services are impacted: {', '.join(downstream_deps)}")
             else:
-                st.success(f"✅ **{sel_svc_name}** is self-contained or at the edge of the architecture (0 downstream dependencies).")
+                st.success(
+                    f"✅ **{sel_svc_name}** is self-contained or at the edge of the architecture (0 downstream dependencies).")
 
 
 # ---------------------------------------------------------
@@ -950,8 +1051,10 @@ with tab_pqc:
     st.caption("Architectural migration simulator modeling transition from legacy classical cryptography to NIST FIPS 203/204/205 standards.")
 
     if not df.empty:
-        sim_options = {f"{r['host']}:{r['port']} (ID: {r['id']} - MWQRS: {r['risk_score']})": r['id'] for _, r in df.iterrows()}
-        selected_sim_label = st.selectbox("Select Target Cryptographic Asset to Migrate:", list(sim_options.keys()), key="pqc_sim_select")
+        sim_options = {
+            f"{r['host']}:{r['port']} (ID: {r['id']} - MWQRS: {r['risk_score']})": r['id'] for _, r in df.iterrows()}
+        selected_sim_label = st.selectbox("Select Target Cryptographic Asset to Migrate:", list(
+            sim_options.keys()), key="pqc_sim_select")
         selected_sim_id = sim_options[selected_sim_label]
 
         # Strategy selector
@@ -961,10 +1064,12 @@ with tab_pqc:
             format_func=lambda k: sim_eng.MIGRATION_STRATEGIES[k]["name"],
             key="pqc_sim_strategy"
         )
-        st.info(f"**Strategy Details:** {sim_eng.MIGRATION_STRATEGIES[strat_key]['description']} (Ref: {sim_eng.MIGRATION_STRATEGIES[strat_key]['standard_reference']})")
+        st.info(
+            f"**Strategy Details:** {sim_eng.MIGRATION_STRATEGIES[strat_key]['description']} (Ref: {sim_eng.MIGRATION_STRATEGIES[strat_key]['standard_reference']})")
 
         if st.button("🚀 Run Migration Impact Simulation", key="btn_run_sim"):
-            sim_res = sim_eng.simulate_migration(selected_sim_id, DB_PATH, strategy=strat_key)
+            sim_res = sim_eng.simulate_migration(
+                selected_sim_id, DB_PATH, strategy=strat_key)
 
             st.markdown(f"> [!NOTE]\n> {sim_res['simulation_label']}")
 
@@ -972,7 +1077,8 @@ with tab_pqc:
             sc1, sc2, sc3 = st.columns(3)
             sc1.metric("Current Algorithm", sim_res["current_algorithm"])
             sc2.metric("Migration Complexity", sim_res["migration_complexity"])
-            sc3.metric("Blast Radius Count", f"{sim_res['blast_radius_count']} Services")
+            sc3.metric("Blast Radius Count",
+                       f"{sim_res['blast_radius_count']} Services")
 
             st.markdown("---")
 
@@ -985,7 +1091,8 @@ with tab_pqc:
                 st.write(f"**Algorithm:** `{b['algorithm']}`")
                 st.write(f"**Key Size:** `{b['key_size']} bits`")
                 st.write(f"**MWQRS Risk Score:** `{b['mwqrs_score']} / 100`")
-                st.write(f"**Quantum Vulnerability Status:** {b['quantum_status']}")
+                st.write(
+                    f"**Quantum Vulnerability Status:** {b['quantum_status']}")
                 st.write(f"**TLS Protocol:** `{b['tls_version']}`")
 
             with col_a:
@@ -993,7 +1100,8 @@ with tab_pqc:
                 a = sim_res["after_state"]
                 st.write(f"**Algorithm:** `{a['algorithm']}`")
                 st.write(f"**Key Specification:** `{a['key_size']}`")
-                st.write(f"**Simulated MWQRS Score:** `{a['simulated_mwqrs_score']} / 100` (Risk Reduction: **-{a['risk_reduction']} pts**)")
+                st.write(
+                    f"**Simulated MWQRS Score:** `{a['simulated_mwqrs_score']} / 100` (Risk Reduction: **-{a['risk_reduction']} pts**)")
                 st.write(f"**Simulated Status:** {a['quantum_status']}")
                 st.write(f"**TLS Protocol:** `{a['tls_version']}`")
 
@@ -1003,30 +1111,40 @@ with tab_pqc:
             col_sim1, col_sim2 = st.columns(2)
             with col_sim1:
                 st.markdown("#### 🔒 Recommended NIST PQC Replacement")
-                st.success(f"**Target Direction**: {sim_res['recommended_replacement']}")
-                st.write(f"**Key Establishment (KEM)**: `{sim_res['kem_replacement']}`")
-                st.write(f"**Digital Signatures**: `{sim_res['signature_replacement']}`")
-                st.write(f"**Hybrid Architecture**: `{sim_res['hybrid_modeling']}`")
-                st.write(f"**NIST Standards**: {', '.join(sim_res['standards'])}")
-                st.info(f"**Implementation Guidance**: {sim_res['migration_notes']}")
+                st.success(
+                    f"**Target Direction**: {sim_res['recommended_replacement']}")
+                st.write(
+                    f"**Key Establishment (KEM)**: `{sim_res['kem_replacement']}`")
+                st.write(
+                    f"**Digital Signatures**: `{sim_res['signature_replacement']}`")
+                st.write(
+                    f"**Hybrid Architecture**: `{sim_res['hybrid_modeling']}`")
+                st.write(
+                    f"**NIST Standards**: {', '.join(sim_res['standards'])}")
+                st.info(
+                    f"**Implementation Guidance**: {sim_res['migration_notes']}")
 
                 if st.button("⚡ Apply PQC Migration Remediation to Asset", key="btn_apply_pqc"):
                     sim_eng.apply_pqc_remediation(selected_sim_id, DB_PATH)
-                    st.success("Asset successfully updated with NIST PQC record in database! Recalculating system MWQRS.")
+                    st.success(
+                        "Asset successfully updated with NIST PQC record in database! Recalculating system MWQRS.")
                     st.rerun()
 
             with col_sim2:
-                st.markdown("#### 💥 Downstream Services Affected (Blast Radius)")
+                st.markdown(
+                    "#### 💥 Downstream Services Affected (Blast Radius)")
                 deps = sim_res["affected_dependent_services"]
                 if deps:
                     for d in deps:
-                        st.warning(f"⚠️ **{d}** (Depends on this service — requires certificate rollover coordination)")
+                        st.warning(
+                            f"⚠️ **{d}** (Depends on this service — requires certificate rollover coordination)")
                 else:
                     st.success("No downstream dependent services affected.")
 
         st.markdown("---")
         st.subheader("📋 Recommended Topological Migration Sequence")
-        st.write("Prioritized by MWQRS Risk Score (Highest first) and low blast radius as tie-breaker.")
+        st.write(
+            "Prioritized by MWQRS Risk Score (Highest first) and low blast radius as tie-breaker.")
 
         roadmap = sim_eng.recommend_migration_order(DB_PATH)
         st.dataframe(pd.DataFrame(roadmap), use_container_width=True)
@@ -1040,11 +1158,13 @@ with tab_code:
     st.caption("Scans repository source code across languages (.py, .js, .java, .c, .go, .env, .pem) for hardcoded keys, weak hashes, deprecated block ciphers, and key references.")
     st.info("📌 **Note**: Source-code scanning is distinct from TLS network scanning; it inspects repository files directly for cryptographic implementation patterns.")
 
-    code_path_input = st.text_input("Source Directory to Scan", ".", key="code_scan_path_input")
+    code_path_input = st.text_input(
+        "Source Directory to Scan", ".", key="code_scan_path_input")
     if st.button("🔍 Run Codebase Cryptographic Scan", key="btn_run_code_scan"):
         with st.spinner("Scanning source files with AST and regex rule engines..."):
             findings = code_eng.scan_source_directory(code_path_input, DB_PATH)
-            st.success(f"Code scan finished. Discovered {len(findings)} cryptographic findings.")
+            st.success(
+                f"Code scan finished. Discovered {len(findings)} cryptographic findings.")
 
     conn = inv.get_db_connection(DB_PATH)
     cursor = conn.cursor()
@@ -1054,11 +1174,13 @@ with tab_code:
 
     if not code_df.empty:
         st.dataframe(
-            code_df[["id", "file_path", "line_number", "severity", "finding_type", "code_snippet", "scanned_at"]],
+            code_df[["id", "file_path", "line_number", "severity",
+                     "finding_type", "code_snippet", "scanned_at"]],
             use_container_width=True
         )
     else:
-        st.info("No code findings recorded yet. Click 'Run Codebase Cryptographic Scan' above.")
+        st.info(
+            "No code findings recorded yet. Click 'Run Codebase Cryptographic Scan' above.")
 
 
 # ---------------------------------------------------------
@@ -1081,15 +1203,18 @@ with tab_cnt:
         )
     with cnt_col2:
         if "Custom Path" in fixture_choice:
-            target_container_path = st.text_input("Enter Dockerfile or container directory path:", ".", key="cnt_custom_path")
+            target_container_path = st.text_input(
+                "Enter Dockerfile or container directory path:", ".", key="cnt_custom_path")
         else:
             target_container_path = fixture_choice.split(" ")[0]
 
     if st.button("⚡ Execute Container Cryptographic Inspection", key="btn_run_cnt_scan"):
         with st.spinner(f"Analyzing container target {target_container_path}..."):
             try:
-                cnt_findings = cnt_eng.scan_container_target(target_container_path, DB_PATH)
-                st.success(f"Container inspection complete. Identified {len(cnt_findings)} cryptographic findings.")
+                cnt_findings = cnt_eng.scan_container_target(
+                    target_container_path, DB_PATH)
+                st.success(
+                    f"Container inspection complete. Identified {len(cnt_findings)} cryptographic findings.")
             except Exception as e:
                 st.error(f"Container scan error: {str(e)}")
 
@@ -1099,11 +1224,13 @@ with tab_cnt:
         st.markdown("### 📋 Container Cryptographic Findings")
         cnt_df = pd.DataFrame(db_cnt_findings)
         st.dataframe(
-            cnt_df[["id", "target_path", "finding_type", "severity", "component", "evidence", "recommendation"]],
+            cnt_df[["id", "target_path", "finding_type", "severity",
+                    "component", "evidence", "recommendation"]],
             use_container_width=True
         )
     else:
-        st.info("No container findings recorded yet. Click 'Execute Container Cryptographic Inspection' above.")
+        st.info(
+            "No container findings recorded yet. Click 'Execute Container Cryptographic Inspection' above.")
 
 
 # ---------------------------------------------------------
@@ -1135,7 +1262,8 @@ with tab_api:
         if st.button("⚡ Inspect API Cryptographic Posture", key="btn_inspect_api_fixture"):
             with st.spinner("Parsing API fixture and decoding JWT header..."):
                 rep = api_eng.inspect_api_fixture(fixture_file, DB_PATH)
-                st.success(f"Inspection complete for {rep['url']}. Overall Cryptographic Risk: **{rep['overall_risk']}**")
+                st.success(
+                    f"Inspection complete for {rep['url']}. Overall Cryptographic Risk: **{rep['overall_risk']}**")
 
                 a_c1, a_c2, a_c3 = st.columns(3)
                 a_c1.metric("API Endpoint", rep["endpoint"])
@@ -1146,15 +1274,20 @@ with tab_api:
                 if rep["jwt_analysis"]:
                     jwt_c = rep["jwt_analysis"]["classification"]
                     st.markdown("#### 🔑 JWT Signature Algorithm Analysis")
-                    st.write(f"- **Algorithm:** `{jwt_c['algorithm']}` ({jwt_c['type']})")
-                    st.write(f"- **Quantum Vulnerability Status:** {jwt_c['quantum_status']}")
-                    st.write(f"- **Recommendation:** {jwt_c['recommendation']}")
+                    st.write(
+                        f"- **Algorithm:** `{jwt_c['algorithm']}` ({jwt_c['type']})")
+                    st.write(
+                        f"- **Quantum Vulnerability Status:** {jwt_c['quantum_status']}")
+                    st.write(
+                        f"- **Recommendation:** {jwt_c['recommendation']}")
 
                 if rep["tls_info"]:
                     st.markdown("#### 🔒 Transport Layer Security (TLS)")
                     t_info = rep["tls_info"]
-                    st.write(f"- **TLS Version:** `{t_info.get('version')}` | **Cipher:** `{t_info.get('cipher_suite')}`")
-                    st.write(f"- **Certificate Key:** `{t_info.get('cert_key_type')}` ({t_info.get('cert_key_size_bits')} bits)")
+                    st.write(
+                        f"- **TLS Version:** `{t_info.get('version')}` | **Cipher:** `{t_info.get('cipher_suite')}`")
+                    st.write(
+                        f"- **Certificate Key:** `{t_info.get('cert_key_type')}` ({t_info.get('cert_key_size_bits')} bits)")
 
                 if rep["findings"]:
                     st.markdown("#### ⚠️ Noteworthy Findings")
@@ -1165,18 +1298,23 @@ with tab_api:
         if mode_selection == "🔵 OFFLINE MODE":
             st.warning("⚠️ OFFLINE MODE is active. Public API endpoints are blocked. Enter a local endpoint (e.g. https://127.0.0.1:8443) or use the Controlled Test Fixtures above.")
 
-        live_api_url = st.text_input("Enter API Endpoint URL (e.g. https://127.0.0.1:8443/api/v1/auth):", "https://127.0.0.1:8443", key="live_api_input")
-        sample_jwt_input = st.text_area("Optional Bearer JWT Token to Analyze (or leave blank):", "", key="sample_jwt_area")
+        live_api_url = st.text_input(
+            "Enter API Endpoint URL (e.g. https://127.0.0.1:8443/api/v1/auth):", "https://127.0.0.1:8443", key="live_api_input")
+        sample_jwt_input = st.text_area(
+            "Optional Bearer JWT Token to Analyze (or leave blank):", "", key="sample_jwt_area")
 
         if st.button("⚡ Scan Live API Endpoint", key="btn_scan_live_api"):
             parsed_u = urllib.parse.urlparse(live_api_url)
             host_u = parsed_u.hostname or "127.0.0.1"
             if mode_selection == "🔵 OFFLINE MODE" and offline_eng.is_blocked_in_offline_mode(host_u):
-                st.error(f"❌ Host `{host_u}` blocked: External network scanning is prohibited in Sovereign Offline Mode.")
+                st.error(
+                    f"❌ Host `{host_u}` blocked: External network scanning is prohibited in Sovereign Offline Mode.")
             else:
                 with st.spinner(f"Connecting to API endpoint {live_api_url}..."):
-                    rep = api_eng.inspect_api_endpoint(live_api_url, sample_jwt=sample_jwt_input or None, db_path=DB_PATH)
-                    st.success(f"API Scan Complete. Cryptographic Risk: **{rep['overall_risk']}**")
+                    rep = api_eng.inspect_api_endpoint(
+                        live_api_url, sample_jwt=sample_jwt_input or None, db_path=DB_PATH)
+                    st.success(
+                        f"API Scan Complete. Cryptographic Risk: **{rep['overall_risk']}**")
                     st.json(rep)
 
 
@@ -1191,33 +1329,39 @@ with tab_diff:
     st.markdown("### 📸 Scan Snapshots")
     snap_col1, snap_col2 = st.columns([3, 1])
     with snap_col1:
-        snap_name_input = st.text_input("Snapshot Name / Label:", f"Scan Snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}", key="snap_name_input")
+        snap_name_input = st.text_input(
+            "Snapshot Name / Label:", f"Scan Snapshot {datetime.now().strftime('%Y-%m-%d %H:%M')}", key="snap_name_input")
     with snap_col2:
-        st.write("") # vertical spacing
+        st.write("")  # vertical spacing
         st.write("")
         if st.button("📸 Take Snapshot of Current State", key="btn_save_snapshot"):
             sid = inv.save_scan_snapshot(snap_name_input, DB_PATH)
-            st.success(f"Snapshot #{sid} ('{snap_name_input}') saved successfully.")
+            st.success(
+                f"Snapshot #{sid} ('{snap_name_input}') saved successfully.")
             st.rerun()
 
     snapshots = inv.get_scan_snapshots(DB_PATH)
     if snapshots:
         snap_df = pd.DataFrame(snapshots)
         st.dataframe(
-            snap_df[["id", "name", "created_at", "asset_count", "avg_risk", "critical_count", "medium_count", "safe_count"]],
+            snap_df[["id", "name", "created_at", "asset_count",
+                     "avg_risk", "critical_count", "medium_count", "safe_count"]],
             use_container_width=True
         )
 
         st.markdown("---")
         st.markdown("### 🔍 Compare Scan Snapshots (Diff Engine)")
         if len(snapshots) >= 2:
-            snap_options = {f"#{s['id']} — {s['name']} ({s['created_at']})": s['id'] for s in snapshots}
+            snap_options = {
+                f"#{s['id']} — {s['name']} ({s['created_at']})": s['id'] for s in snapshots}
             c_s1, c_s2 = st.columns(2)
             with c_s1:
-                baseline_label = st.selectbox("Baseline Snapshot (Old):", list(snap_options.keys()), index=len(snap_options)-1, key="baseline_snap_sel")
+                baseline_label = st.selectbox("Baseline Snapshot (Old):", list(
+                    snap_options.keys()), index=len(snap_options)-1, key="baseline_snap_sel")
                 old_id = snap_options[baseline_label]
             with c_s2:
-                comp_label = st.selectbox("Comparison Snapshot (New):", list(snap_options.keys()), index=0, key="comp_snap_sel")
+                comp_label = st.selectbox("Comparison Snapshot (New):", list(
+                    snap_options.keys()), index=0, key="comp_snap_sel")
                 new_id = snap_options[comp_label]
 
             if st.button("⚡ Run Cryptographic Diff Comparison", key="btn_run_diff"):
@@ -1228,15 +1372,18 @@ with tab_diff:
                 d1.metric("Assets Added", f"+{s['assets_added']}")
                 d2.metric("Assets Removed", f"-{s['assets_removed']}")
                 d3.metric("Assets Modified", s["assets_modified"])
-                d4.metric("Risk Increased", f"+{s['risk_increased_count']}", delta_color="inverse")
-                d5.metric("Avg MWQRS Delta", f"{'+' if s['avg_risk_delta'] > 0 else ''}{s['avg_risk_delta']}")
+                d4.metric("Risk Increased",
+                          f"+{s['risk_increased_count']}", delta_color="inverse")
+                d5.metric(
+                    "Avg MWQRS Delta", f"{'+' if s['avg_risk_delta'] > 0 else ''}{s['avg_risk_delta']}")
 
                 st.markdown("#### 🚨 Detected Change Alerts")
                 if diff_res["alerts"]:
                     for a in diff_res["alerts"]:
                         st.warning(a)
                 else:
-                    st.success("No cryptographic regressions or structural changes detected between snapshots.")
+                    st.success(
+                        "No cryptographic regressions or structural changes detected between snapshots.")
 
                 # Download Diff Report
                 diff_md = diff_eng.export_diff_markdown(diff_res)
@@ -1255,7 +1402,8 @@ with tab_diff:
     st.markdown("### ⏲️ Periodic Rescan Cadence Configuration")
     cad1, cad2 = st.columns(2)
     with cad1:
-        rescan_interval = st.selectbox("Configured Rescan Cadence:", ["Every 24 Hours (Default)", "Every 12 Hours", "Every 6 Hours", "Continuous (On-Demand)"], index=0)
+        rescan_interval = st.selectbox("Configured Rescan Cadence:", [
+                                       "Every 24 Hours (Default)", "Every 12 Hours", "Every 6 Hours", "Continuous (On-Demand)"], index=0)
     with cad2:
         st.write("")
         st.caption("📌 **Execution Policy**: Automated cron or pipeline scheduler executes `python cli.py pipeline` at the configured interval. ECDAT captures snapshot versions and generates diff alerts on drift.")
@@ -1274,23 +1422,31 @@ with tab_comp:
 
     norm_comp = inv.get_normalized_inventory(DB_PATH)
     total_c = len(norm_comp)
+    qv_c = 0
+    pqc_c = 0
+    mig_req_c = 0
 
     if total_c > 0:
-        qv_c = sum(1 for a in norm_comp if "Quantum-Vulnerable" in a.get("quantum_status", ""))
-        pqc_c = sum(1 for a in norm_comp if "Quantum-Resistant" in a.get("quantum_status", ""))
-        mig_req_c = sum(1 for a in norm_comp if a.get("migration_status") == "Migration Required")
+        qv_c = sum(
+            1 for a in norm_comp if "Quantum-Vulnerable" in a.get("quantum_status", ""))
+        pqc_c = sum(
+            1 for a in norm_comp if "Quantum-Resistant" in a.get("quantum_status", ""))
+        mig_req_c = sum(1 for a in norm_comp if a.get(
+            "migration_status") == "Migration Required")
         unknown_c = total_c - (qv_c + pqc_c)
 
-       
         cp1, cp2, cp3, cp4, cp5 = st.columns(5)
         cp1.metric("Total Cryptographic Assets", total_c)
-        cp2.metric("Quantum-Vulnerable", qv_c, delta=f"{round(qv_c/total_c*100,1)}%", delta_color="inverse")
+        cp2.metric("Quantum-Vulnerable", qv_c,
+                   delta=f"{round(qv_c/total_c*100, 1)}%", delta_color="inverse")
         cp3.metric("PQC-Ready / Migrated", pqc_c)
         cp4.metric("Migration Required", mig_req_c)
         cp5.metric("Unknown / Under Review", unknown_c)
 
-        n_local_c = sum(1 for a in norm_comp if str(a.get("host", "")).startswith("127."))
-        st.caption(f"📌 {total_c} total includes {n_local_c} local demo fixtures + historical records; public-host-only counts are shown on the Executive Dashboard.")
+        n_local_c = sum(1 for a in norm_comp if str(
+            a.get("host", "")).startswith("127."))
+        st.caption(
+            f"📌 {total_c} total includes {n_local_c} local demo fixtures + historical records; public-host-only counts are shown on the Executive Dashboard.")
 
         st.markdown("---")
         st.markdown("### 📋 Technical Control Status Checklist")
@@ -1298,22 +1454,35 @@ with tab_comp:
         col_chk1, col_chk2 = st.columns(2)
         with col_chk1:
             st.markdown("#### Implemented Prototype Controls")
-            st.success("✅ **Crypto Inventory Available**: Normalized cryptographic asset database operational")
-            st.success("✅ **Algorithm Identified**: TLS ciphers, key specifications, and signature algorithms parsed")
-            st.success("✅ **Key Size Tracked**: Bit strengths catalogued against NIST SP 800-52 Rev. 2 minimums")
-            st.success("✅ **Certificate Expiry Tracked**: X.509 validity periods and renewal windows monitored")
-            st.success("✅ **Quantum Risk Score Calculated**: MWQRS composite index calculated for all endpoints")
-            st.success("✅ **Dependency Mapping Available**: Service inter-dependencies mapped in NetworkX")
-            st.success("✅ **PQC Recommendation Available**: NIST FIPS 203/204/205 replacement guidance generated")
-            st.success("✅ **CBOM Generated**: CycloneDX v1.6 specification compliant export ready")
+            st.success(
+                "✅ **Crypto Inventory Available**: Normalized cryptographic asset database operational")
+            st.success(
+                "✅ **Algorithm Identified**: TLS ciphers, key specifications, and signature algorithms parsed")
+            st.success(
+                "✅ **Key Size Tracked**: Bit strengths catalogued against NIST SP 800-52 Rev. 2 minimums")
+            st.success(
+                "✅ **Certificate Expiry Tracked**: X.509 validity periods and renewal windows monitored")
+            st.success(
+                "✅ **Quantum Risk Score Calculated**: MWQRS composite index calculated for all endpoints")
+            st.success(
+                "✅ **Dependency Mapping Available**: Service inter-dependencies mapped in NetworkX")
+            st.success(
+                "✅ **PQC Recommendation Available**: NIST FIPS 203/204/205 replacement guidance generated")
+            st.success(
+                "✅ **CBOM Generated**: CycloneDX v1.6 specification compliant export ready")
 
         with col_chk2:
             st.markdown("#### Controls in Progress & Roadmap Items")
-            st.warning("⚠️ **Assets Requiring PQC Migration**: Active classical public keys require hybrid or PQC transition")
-            st.info("ℹ️ **Hardware Security Modules (HSM) Cataloguing**: [Prototype limitation / roadmap]")
-            st.info("ℹ️ **Cloud KMS Key Inventory Integration**: [Prototype limitation / roadmap]")
-            st.info("ℹ️ **Compiled Binary (.so/ELF) Inspection**: [Prototype limitation / roadmap]")
-            st.info("ℹ️ **Production Distributed Agent Architecture**: [Prototype limitation / roadmap]")
+            st.warning(
+                "⚠️ **Assets Requiring PQC Migration**: Active classical public keys require hybrid or PQC transition")
+            st.info(
+                "ℹ️ **Hardware Security Modules (HSM) Cataloguing**: [Prototype limitation / roadmap]")
+            st.info(
+                "ℹ️ **Cloud KMS Key Inventory Integration**: [Prototype limitation / roadmap]")
+            st.info(
+                "ℹ️ **Compiled Binary (.so/ELF) Inspection**: [Prototype limitation / roadmap]")
+            st.info(
+                "ℹ️ **Production Distributed Agent Architecture**: [Prototype limitation / roadmap]")
 
     # Download Compliance Report
     st.markdown("---")
@@ -1350,7 +1519,8 @@ with tab_comp:
 # ---------------------------------------------------------
 with tab_cbom:
     st.subheader("📜 Cryptographic Bill of Materials (CBOM) Studio")
-    st.caption("Exports cryptographic inventory strictly formatted in CycloneDX CBOM Specification 1.6 JSON standard.")
+    st.caption(
+        "Exports cryptographic inventory strictly formatted in CycloneDX CBOM Specification 1.6 JSON standard.")
 
     cbom_json = inv.export_cbom(DB_PATH)
     try:
@@ -1373,7 +1543,8 @@ with tab_cbom:
 
     if valid_json:
         MAX_PREVIEW_COMPONENTS = 5
-        preview_obj = dict(parsed_cbom)  # shallow copy, don't mutate the real object
+        # shallow copy, don't mutate the real object
+        preview_obj = dict(parsed_cbom)
         full_components = preview_obj.get("components", [])
         if len(full_components) > MAX_PREVIEW_COMPONENTS:
             preview_obj["components"] = full_components[:MAX_PREVIEW_COMPONENTS]
@@ -1381,7 +1552,8 @@ with tab_cbom:
                 f"Showing {MAX_PREVIEW_COMPONENTS} of {len(full_components)} components. "
                 "Download the full file below for the complete document."
             )
-        st.json(preview_obj)  # pass a real dict — st.json handles serialization itself
+        # pass a real dict — st.json handles serialization itself
+        st.json(preview_obj)
     else:
         st.error("CBOM document failed JSON validation — cannot preview.")
         st.code(cbom_json[:1500], language="text")
@@ -1454,12 +1626,15 @@ with tab_tls:
                         status = res.get("status")
                         scan_ok = status == "success"
                         if scan_ok:
-                            linked_crit = score_eng.get_linked_criticality(host, port, DB_PATH)
-                            mwqrs_score = score_eng.calculate_mwqrs(res, service_criticality=linked_crit)
+                            linked_crit = score_eng.get_linked_criticality(
+                                host, port, DB_PATH)
+                            mwqrs_score = score_eng.calculate_mwqrs(
+                                res, service_criticality=linked_crit)
                         else:
                             mwqrs_score = 0.0
                         risk_band, risk_band_help = get_risk_band(mwqrs_score)
-                        verdict, reason, recommendation, verdict_style = get_scan_verdict(res, mwqrs_score)
+                        verdict, reason, recommendation, verdict_style = get_scan_verdict(
+                            res, mwqrs_score)
 
                     if scan_ok:
                         risk_flags = res.get("risk_flags") or []
@@ -1484,21 +1659,27 @@ with tab_tls:
                         c3.metric("Risk band", risk_band)
                         c4.metric("TLS version", tls_version)
                         st.caption(risk_band_help)
-                        st.metric("Certificate key", f"{cert_key_type} {key_size}b")
+                        st.metric("Certificate key",
+                                  f"{cert_key_type} {key_size}b")
 
                         if days_to_expiry is not None:
-                            st.info(f"Certificate expires in {days_to_expiry} day(s).")
+                            st.info(
+                                f"Certificate expires in {days_to_expiry} day(s).")
 
                         with st.expander("Plain-English explanation", expanded=True):
-                            st.write(f"ECDAT connected to **{host}:{port}** (local endpoint) and checked its TLS configuration.")
-                            st.write(f"The server is using **{tls_version}** with a **{cert_key_type} {key_size}-bit** certificate key.")
-                            st.write(f"The certificate is issued to **{res.get('cert_subject', 'Unknown')}**.")
+                            st.write(
+                                f"ECDAT connected to **{host}:{port}** (local endpoint) and checked its TLS configuration.")
+                            st.write(
+                                f"The server is using **{tls_version}** with a **{cert_key_type} {key_size}-bit** certificate key.")
+                            st.write(
+                                f"The certificate is issued to **{res.get('cert_subject', 'Unknown')}**.")
                             if risk_flags:
                                 st.write("What needs attention:")
                                 for flag in risk_flags:
                                     st.write(f"- {explain_risk_flag(flag)}")
                             else:
-                                st.write("No scanner warnings found for this local endpoint.")
+                                st.write(
+                                    "No scanner warnings found for this local endpoint.")
 
                         with st.expander("Technical JSON details"):
                             st.json(res)
@@ -1535,12 +1716,13 @@ with tab_tls:
                 scan_summary_rows = []
                 for local_host, local_port in offline_eng.LOCAL_TEST_SERVERS:
                     r = scanner_core.scan_host(local_host, local_port)
-                    sc = score_eng.calculate_mwqrs(r) if r["status"] == "success" else 0.0
+                    sc = score_eng.calculate_mwqrs(
+                        r) if r["status"] == "success" else 0.0
                     scan_summary_rows.append({
                         "Target": f"{local_host}:{local_port}",
                         "Status": r["status"],
                         "TLS": r.get("tls_version", "—"),
-                        "Key": f"{r.get('cert_key_type','?')} {r.get('cert_key_size_bits','?')}b",
+                        "Key": f"{r.get('cert_key_type', '?')} {r.get('cert_key_size_bits', '?')}b",
                         "Days to Expiry": r.get("days_to_expiry", "—"),
                         "MWQRS": sc,
                         "Flags": ", ".join(r.get("risk_flags") or []) or "OK",
@@ -1551,11 +1733,14 @@ with tab_tls:
             inv.seed_offline_demo_data(DB_PATH)
             score_eng.score_all_assets(DB_PATH)
             import pandas as pd
-            st.dataframe(pd.DataFrame(scan_summary_rows), use_container_width=True)
-            success_count = sum(1 for row in scan_summary_rows if row["Status"] == "success")
+            st.dataframe(pd.DataFrame(scan_summary_rows),
+                         use_container_width=True)
+            success_count = sum(
+                1 for row in scan_summary_rows if row["Status"] == "success")
             fail_count = len(scan_summary_rows) - success_count
             if success_count > 0:
-                st.success(f"✅ Scanned {success_count} local endpoint(s) successfully. Inventory updated.")
+                st.success(
+                    f"✅ Scanned {success_count} local endpoint(s) successfully. Inventory updated.")
             if fail_count > 0:
                 st.warning(
                     f"⚠️ {fail_count} local server(s) unreachable. "
@@ -1594,18 +1779,22 @@ with tab_tls:
 
             if cr["status"] == "success":
                 cert_mwqrs = score_eng.calculate_mwqrs(cr)
-                st.success(f"✅ Certificate parsed successfully — MWQRS: **{cert_mwqrs}/100**")
+                st.success(
+                    f"✅ Certificate parsed successfully — MWQRS: **{cert_mwqrs}/100**")
 
                 cc1, cc2, cc3 = st.columns(3)
                 cc1.metric("Key Type", cr.get("cert_key_type", "?"))
-                cc2.metric("Key Size", f"{cr.get('cert_key_size_bits', '?')} bits")
+                cc2.metric(
+                    "Key Size", f"{cr.get('cert_key_size_bits', '?')} bits")
                 cc3.metric("Days to Expiry", cr.get("days_to_expiry", "?"))
 
                 with st.expander("Certificate Details", expanded=True):
                     st.write(f"**Subject:** {cr.get('cert_subject', 'N/A')}")
                     st.write(f"**Issuer:** {cr.get('cert_issuer', 'N/A')}")
-                    st.write(f"**Signature Algorithm:** {cr.get('cert_signature_algorithm', 'N/A')}")
-                    st.write(f"**Not After:** {cr.get('cert_not_after', 'N/A')}")
+                    st.write(
+                        f"**Signature Algorithm:** {cr.get('cert_signature_algorithm', 'N/A')}")
+                    st.write(
+                        f"**Not After:** {cr.get('cert_not_after', 'N/A')}")
                     flags = cr.get("risk_flags") or []
                     if flags:
                         st.write("**Risk Flags:**")
@@ -1633,12 +1822,14 @@ with tab_tls:
         if local_certs:
             st.markdown("---")
             st.markdown("### 📁 Auto-Discovered Local Certificate Files")
-            st.caption("Certificate files found in the project directory (generated by `generate_test_certs.py`).")
+            st.caption(
+                "Certificate files found in the project directory (generated by `generate_test_certs.py`).")
             for cp in local_certs:
                 cr = offline_eng.analyze_cert_file(cp)
                 if cr["status"] == "success":
                     cert_mwqrs = score_eng.calculate_mwqrs(cr)
-                    risk_color = "🔴" if cert_mwqrs >= 80 else ("🟠" if cert_mwqrs >= 50 else "🟢")
+                    risk_color = "🔴" if cert_mwqrs >= 80 else (
+                        "🟠" if cert_mwqrs >= 50 else "🟢")
                     st.write(
                         f"{risk_color} **{cp.name}** — "
                         f"{cr.get('cert_key_type')} {cr.get('cert_key_size_bits')}b | "
@@ -1646,11 +1837,11 @@ with tab_tls:
                         f"MWQRS: {cert_mwqrs}"
                     )
                 else:
-                    st.write(f"⚠️ **{cp.name}** — Parse error: {cr.get('error')}")
+                    st.write(
+                        f"⚠️ **{cp.name}** — Parse error: {cr.get('error')}")
 
     else:  # LIVE MODE or CACHED MODE scanner
         st.caption("ECDAT checks TLS, certificates, and cryptographic posture. It does not replace full web vulnerability scanners such as OWASP ZAP or Burp Suite.")
-
 
         if "live_scan_target" not in st.session_state:
             st.session_state.live_scan_target = "127.0.0.1:8443"
@@ -1679,12 +1870,15 @@ with tab_tls:
                     status = res.get("status")
                     scan_ok = status == "success"
                     if scan_ok:
-                        linked_crit = score_eng.get_linked_criticality(host, port, DB_PATH)
-                        mwqrs_score = score_eng.calculate_mwqrs(res, service_criticality=linked_crit)
+                        linked_crit = score_eng.get_linked_criticality(
+                            host, port, DB_PATH)
+                        mwqrs_score = score_eng.calculate_mwqrs(
+                            res, service_criticality=linked_crit)
                     else:
                         mwqrs_score = 0.0
                     risk_band, risk_band_help = get_risk_band(mwqrs_score)
-                    verdict, reason, recommendation, verdict_style = get_scan_verdict(res, mwqrs_score)
+                    verdict, reason, recommendation, verdict_style = get_scan_verdict(
+                        res, mwqrs_score)
 
                     if scan_ok:
                         risk_flags = res.get("risk_flags") or []
@@ -1710,45 +1904,56 @@ with tab_tls:
                         c4.metric("TLS version", tls_version)
                         st.caption(risk_band_help)
 
-                        st.metric("Certificate key", f"{cert_key_type} {key_size}b")
+                        st.metric("Certificate key",
+                                  f"{cert_key_type} {key_size}b")
 
                         if days_to_expiry is not None:
-                            st.info(f"Certificate expires in {days_to_expiry} day(s).")
+                            st.info(
+                                f"Certificate expires in {days_to_expiry} day(s).")
 
                         with st.expander("Plain-English explanation", expanded=True):
-                            st.write(f"ECDAT connected to **{host}:{port}** and checked how the website protects encrypted traffic.")
-                            st.write(f"The site is using **{tls_version}** with a **{cert_key_type} {key_size}-bit** certificate key.")
-                            st.write(f"The certificate is issued to **{res.get('cert_subject', 'Unknown')}**.")
+                            st.write(
+                                f"ECDAT connected to **{host}:{port}** and checked how the website protects encrypted traffic.")
+                            st.write(
+                                f"The site is using **{tls_version}** with a **{cert_key_type} {key_size}-bit** certificate key.")
+                            st.write(
+                                f"The certificate is issued to **{res.get('cert_subject', 'Unknown')}**.")
                             if risk_flags:
                                 st.write("What needs attention:")
                                 for flag in risk_flags:
                                     st.write(f"- {explain_risk_flag(flag)}")
                             else:
-                                st.write("No scanner warnings were found for this target.")
+                                st.write(
+                                    "No scanner warnings were found for this target.")
 
                         with st.expander("Technical JSON details"):
                             st.json(res)
 
                         # Save to the inventory only in LIVE mode, so the cached demo dataset stays unchanged
                         if mode_selection == "🟡 CACHED MODE":
-                            st.info("Cached mode: this scan is shown but not saved, so the cached demo dataset stays unchanged.")
+                            st.info(
+                                "Cached mode: this scan is shown but not saved, so the cached demo dataset stays unchanged.")
                         else:
                             with open("temp_scan.json", "w") as f:
                                 json.dump([res], f)
                             inv.ingest_scan_results("temp_scan.json", DB_PATH)
                             score_eng.score_all_assets(DB_PATH)
-                            st.success(f"✅ Scanned {host}:{port} successfully and ingested into database inventory!")
+                            st.success(
+                                f"✅ Scanned {host}:{port} successfully and ingested into database inventory!")
                     else:
                         st.error(f"Final verdict: {verdict}")
                         st.write(f"**Reason:** {reason}")
                         st.write(f"**Recommended action:** {recommendation}")
-                        st.write(res.get("error") or "The target may be unreachable, blocked, or not serving TLS on this port.")
+                        st.write(res.get(
+                            "error") or "The target may be unreachable, blocked, or not serving TLS on this port.")
                         with st.expander("Technical JSON details"):
                             st.json(res)
                         if status == "unreachable":
-                            st.warning(f"⚠️ Target unreachable — no result ingested. ({res.get('error', 'no details')})")
+                            st.warning(
+                                f"⚠️ Target unreachable — no result ingested. ({res.get('error', 'no details')})")
                         else:
-                            st.error(f"❌ Scan error — no result ingested. Status: {status}. ({res.get('error', 'no details')})")
+                            st.error(
+                                f"❌ Scan error — no result ingested. Status: {status}. ({res.get('error', 'no details')})")
 
 
 # ---------------------------------------------------------
@@ -1762,7 +1967,8 @@ with tab_tour:
             "low_below_50": int((scores < 50).sum()),
         }
 
-    ai_summary = {"data_source": mode_selection, "asset_rows_in_current_database": int(len(df))}
+    ai_summary = {"data_source": mode_selection,
+                  "asset_rows_in_current_database": int(len(df))}
     if not df.empty and "risk_score" in df.columns:
         _scores = pd.to_numeric(df["risk_score"], errors="coerce").dropna()
         if len(_scores):
