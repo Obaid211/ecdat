@@ -29,10 +29,14 @@ import ecdat_diff as diff_eng
 
 import os
 import shutil
+import logging
 from datetime import datetime, timezone
 
 import ecdat_ai
 from ecdat_guide_ui import render_guide_and_assistant
+
+logger = logging.getLogger("ecdat_app")
+BASE_DIR = Path(__file__).resolve().parent
 
 
 st.set_page_config(
@@ -99,7 +103,9 @@ def get_ai_pool():
     return ecdat_ai.KeyPool.from_env()
 
 
-OFFLINE_DB_PATH = "offline_ecdat.db"
+DEFAULT_LIVE_DB = str(BASE_DIR / "ecdat.db")
+FALLBACK_DB_PATH = str(BASE_DIR / "demo_fallback.db")
+OFFLINE_DB_PATH = str(BASE_DIR / "offline_ecdat.db")
 
 
 def get_cached_dataset_label(db_path):
@@ -113,7 +119,8 @@ def get_cached_dataset_label(db_path):
         cursor.execute("SELECT MAX(scanned_at), COUNT(*) FROM crypto_assets")
         latest_scan, asset_count = cursor.fetchone()
         conn.close()
-    except sqlite3.Error:
+    except sqlite3.Error as e:
+        logger.warning("Error reading metadata from %s: %s", db_path, e)
         return "cached dataset metadata unavailable"
 
     if latest_scan:
@@ -130,14 +137,14 @@ mode_selection = st.sidebar.radio(
 )
 
 if mode_selection == "🟡 CACHED MODE":
-    fallback_db = Path("demo_fallback.db")
+    fallback_db = Path(FALLBACK_DB_PATH)
     if fallback_db.exists():
-        DB_PATH = "demo_fallback.db"
+        DB_PATH = FALLBACK_DB_PATH
         cached_dataset_label = get_cached_dataset_label(DB_PATH)
         st.sidebar.warning(
             f"🟡 CACHED MODE ACTIVE\nUsing {cached_dataset_label}. Live database modifications are isolated.")
     else:
-        DB_PATH = inv.DEFAULT_DB_PATH
+        DB_PATH = DEFAULT_LIVE_DB
         st.sidebar.error(
             "⚠️ `demo_fallback.db` not found! Falling back to live `ecdat.db`.")
 
@@ -216,7 +223,7 @@ elif mode_selection == "🔵 OFFLINE MODE":
     inv.init_db(OFFLINE_DB_PATH)
 
 else:
-    DB_PATH = inv.DEFAULT_DB_PATH
+    DB_PATH = DEFAULT_LIVE_DB
     st.sidebar.success(
         "🟢 LIVE MODE ACTIVE\nConnected to live operational database (`ecdat.db`).")
 
@@ -230,7 +237,7 @@ st.markdown('<div class="main-header">ECDAT — Enterprise Cryptographic Discove
             unsafe_allow_html=True)
 st.markdown('<div class="sub-header">SIH26164 (NTRO / Post-Quantum Cryptography & Keyfactor AgileSec Pipeline Model)</div>', unsafe_allow_html=True)
 
-if mode_selection == "🟡 CACHED MODE" and Path("demo_fallback.db").exists():
+if mode_selection == "🟡 CACHED MODE" and Path(FALLBACK_DB_PATH).exists():
     st.info(
         f"🟡 **CACHED DEMO MODE ACTIVE**: Dashboard is rendering {get_cached_dataset_label(DB_PATH)} from `demo_fallback.db`.")
 elif mode_selection == "🔵 OFFLINE MODE":
@@ -405,7 +412,14 @@ def get_scan_verdict(res, mwqrs_score):
 with tab_dash:
     if df.empty:
         st.warning(
-            "No crypto assets scanned yet. Run a scan from the 'Live TLS Scanner' tab or run cli.py.")
+            "⚠️ No crypto assets in database yet. Click below to load demo data or run a scan from the **⚡ Live TLS Scanner** tab.")
+        col_s1, col_s2 = st.columns([1, 4])
+        with col_s1:
+            if st.button("🌱 Seed Demo Data", key="btn_dash_seed_demo"):
+                inv.seed_demo_data(DB_PATH)
+                score_eng.score_all_assets(DB_PATH)
+                st.success("Demo dataset seeded!")
+                st.rerun()
     else:
         # Top KPI Metrics
         total_scanned = len(df)
@@ -428,20 +442,35 @@ with tab_dash:
             f"📌 {total_scanned} total DB records ({n_public_top} public-host scans + {n_local_top} local demo fixtures).")
 
         # Measured Performance Benchmark (Capability 13)
-        scan_json_path = Path("scan_results.json")
+        st.markdown("---")
+        st.markdown(
+            "### ⚡ Measured Discovery & Risk Flagging Performance")
+
+        scan_json_path = BASE_DIR / "scan_results.json"
+        fallback_json_path = BASE_DIR / "demo_fallback_scan.json"
+
+        bench_file = None
+        is_fallback = False
         if scan_json_path.exists():
+            bench_file = scan_json_path
+        elif fallback_json_path.exists():
+            bench_file = fallback_json_path
+            is_fallback = True
+
+        if bench_file is not None:
             try:
-                with open(scan_json_path, "r", encoding="utf-8") as f:
+                with open(bench_file, "r", encoding="utf-8") as f:
                     bench_raw = json.load(f)
-                bench_metrics = scanner_core.calculate_scan_benchmark(
-                    bench_raw)
-                st.markdown("---")
-                st.markdown(
-                    "### ⚡ Measured Discovery & Risk Flagging Performance")
+                bench_metrics = scanner_core.calculate_scan_benchmark(bench_raw)
                 scan_file_mtime = datetime.fromtimestamp(
-                    scan_json_path.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
-                st.caption(f"📌 {bench_metrics['benchmark_label']} — Derived from genuine TLS handshake timings, not hardcoded assertions. "
-                           f"Snapshot from scan_results.json (last updated {scan_file_mtime}); may differ from the live database counts above if a newer scan hasn't been re-ingested.")
+                    bench_file.stat().st_mtime).strftime("%Y-%m-%d %H:%M")
+                source_note = f"Snapshot from `{bench_file.name}` (last updated {scan_file_mtime})"
+                if is_fallback:
+                    source_note += " (Fallback Benchmark Dataset)"
+                st.caption(
+                    f"📌 {bench_metrics['benchmark_label']} — Derived from genuine TLS handshake timings, not hardcoded assertions. "
+                    f"{source_note}; may differ from the live database counts above if a newer scan hasn't been re-ingested."
+                )
                 bm1, bm2, bm3, bm4, bm5 = st.columns(5)
                 bm1.metric("Hosts Attempted", bench_metrics["total_attempted"])
                 bm2.metric("Successful Connections",
@@ -452,8 +481,15 @@ with tab_dash:
                            f"{bench_metrics['median_seconds']}s")
                 bm5.metric("Max Handshake Time",
                            f"{bench_metrics['max_seconds']}s")
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error("Failed to load benchmark metrics from %s: %s", bench_file, e, exc_info=True)
+                st.error(f"⚠️ Error loading benchmark metrics from `{bench_file.name}`: {e}")
+        else:
+            logger.warning("No benchmark dataset found at %s or %s", scan_json_path, fallback_json_path)
+            st.info(
+                "ℹ️ **No benchmark data file found** (`scan_results.json` or `demo_fallback_scan.json`). "
+                "Run a scan from the **⚡ Live TLS Scanner** tab or execute `python cli.py --scan` to generate live handshake benchmark metrics."
+            )
 
         st.markdown("---")
 

@@ -91,15 +91,26 @@ class KeyPool:
 
     @classmethod
     def from_env(cls, environ=None):
-        env = os.environ if environ is None else environ
+        env = dict(os.environ) if environ is None else dict(environ)
         if environ is None:
             try:
                 from dotenv import load_dotenv  # optional dependency
 
                 load_dotenv(override=False)
-                env = os.environ
+                env = dict(os.environ)
             except Exception:
                 pass
+
+            # Fallback to Streamlit secrets if running inside Streamlit
+            try:
+                import streamlit as st
+                if hasattr(st, "secrets"):
+                    for key in ("GEMINI_API_KEYS", "GEMINI_API_KEY", "GEMINI_MODEL", "GEMINI_MODEL_FALLBACK"):
+                        if key in st.secrets and not env.get(key):
+                            env[key] = str(st.secrets[key])
+            except Exception:
+                pass
+
         raw = env.get("GEMINI_API_KEYS") or env.get("GEMINI_API_KEY") or ""
         keys = [k.strip().strip('"').strip("'") for k in raw.split(",")]
         models = [
