@@ -579,7 +579,7 @@ def get_normalized_inventory(db_path=DEFAULT_DB_PATH):
             "service_criticality": a.get("service_criticality") or "P2",
             "algorithm": key_type,
             "algorithm_category": algo_cat,
-            "key_size": key_size_val if key_size_val else "Unknown",
+            "key_size": str(key_size_val) if key_size_val else "Unknown",
             "tls_version": a.get("tls_version") or "Unknown",
             "cipher_info": cipher_str,
             "cert_subject": a.get("cert_subject") or "N/A",
