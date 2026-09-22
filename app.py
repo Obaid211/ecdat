@@ -92,9 +92,7 @@ st.markdown("""
 
 
 # Sidebar Actions
-st.sidebar.image(
-    "https://img.icons8.com/color/96/shield-with-encryption.png", width=70)
-st.sidebar.title("Pipeline Controls")
+st.sidebar.markdown("## 🛡️ Pipeline Controls")
 
 
 @st.cache_resource
